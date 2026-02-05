@@ -1,0 +1,48 @@
+### R ###
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+### renv ###
+# Keep lockfile and activator, ignore library and python env
+renv/library/
+renv/python/
+renv/staging/
+
+### targets ###
+# Ignore the data store (Recommended for multi-computer setups)
+_targets/
+# Ensure metadata is tracked
+!_targets/meta/
+
+### Operating System & Editors ###
+.DS_Store
+# General backups
+*~
+# Emacs
+*.el
+*emacs*
+*.#-emacs*
+
+### Data Files ###
+# Large datasets and binary formats
+*.parquet
+*.rds
+*.dta
+*.Rdata
+*.tar.gz
+
+# Spreadsheets & Text
+*.csv
+*.txt
+*.xls
+*.xlsx
+
+### Project Specific Directories ###
+data-cleaned/
+data-pub/
+data-raw/
+work/
+literature/
+scratch/
