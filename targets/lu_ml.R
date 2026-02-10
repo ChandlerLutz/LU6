@@ -163,7 +163,7 @@ lu_ml_targets <- list(
   ## FHFA Quarterly zip3 LU-ML panel
   tar_target(
     fhfa_qtrly_hpi_lu_ml_zip3,
-    f_get_fhfa_qtrly_zip3_lu_ml_panel(
+    f_get_fhfa_zip3_qtrly_lu_ml_panel(
       dt_hp = fhfa_hpi_qtr_zip3,
       file_path_lu = file_raw_lu_zip3,
       dt_regional_pci_panel = bea_regional_pci_zip3_2000,

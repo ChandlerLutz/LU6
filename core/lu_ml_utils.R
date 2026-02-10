@@ -615,7 +615,7 @@ f_get_zillow_cbsa_zhvi_lu_ml_panel <- function(dt_hp, file_path_lu,
     .[, .(GEOID = cbsa, index, hp.target = dlog_yoy_metro_zhvi_resid)]
 
   dt_lu_ml <- f_run_lu_ml(dt_input, dt_lu, run_in_parallel = TRUE) %>%
-    setnames("GEOID", "cbsa") 
+    setnames("GEOID", "cbsa")
 
   dt_out <- merge(dt_est_data, dt_lu_ml, by = c("cbsa", "index"), all.x = TRUE)
 

@@ -17,67 +17,19 @@ shps_to_get_region_pci <- rbind(
 
 
 bea_targets <- list(
-  
+
   tar_target(
-    file_raw_bea_msa,
-    here::here("data-raw/bea/CAINC1/BEA_CANC1_MSA_per_capita_income.csv"),
-    format = "file"
-  ),
-  tar_target(
-    file_raw_bea_micropolitan,
-    here::here("data-raw/bea/CAINC1/BEA_CANC1_Micropolitan_Statistical_Area_per_capita_income.csv"),
-    format = "file"
-  ),
-  tar_target(
-    file_raw_bea_csa,
-    here::here("data-raw/bea/CAINC1/BEA_CANC1_CSA_per_capita_income.csv"),
-    format = "file"
-  ),
-  tar_target(
-    file_raw_bea_div,
-    here::here("data-raw/bea/CAINC1/BEA_CANC1_Metropolitan_Division_per_capita_income.csv"),
+    file_raw_bea_cnty2020,
+    here::here("data-raw/bea-constant-geographies/output/bea_in_cnty2020.rds"),
     format = "file"
   ),
 
   tar_target(
-    bea_cbsa_pci,
-    f_get_bea_cbsa_per_capita_income(
-      file_msa = file_raw_bea_msa,
-      file_micro = file_raw_bea_micropolitan,
-      file_csa = file_raw_bea_csa,
-      file_div = file_raw_bea_div
-    )
-  ),
-
-  ## BEA Cainc1 files for States and Counties 
-  tar_target(
-    bea_cainc1_file_paths,
-    {
-      states <- sort(c(state.abb[!state.abb %in% c("AK", "HI")], "DC"))
-      here::here(sprintf("data-raw/bea/CAINC1/CAINC1_cnty/CAINC1_%s_1969_2023.csv",
-                         states))
-    },
+    file_raw_bea_cbsa2023,
+    here::here("data-raw/bea-constant-geographies/output/bea_in_cbsa2023.rds"),
     format = "file"
   ),
-
-  tar_target(
-    bea_cainc1_raw,
-    f_load_raw_bea_cainc1(bea_cainc1_file_paths)
-  ),
-
-  tar_target(
-    bea_state_income,
-    f_process_bea_state_income(bea_cainc1_raw)
-  ),
-  
-  tar_target(
-    bea_county_income,
-    f_process_bea_county_income(
-      dt_raw = bea_cainc1_raw,
-      cnty_shp = cnty_shp_2020 
-    )
-  ), 
-  
+    
   ## Regional BEA Income Data (uses CBSAs or Counties as a fallback
   tarchetypes::tar_map(
     values = shps_to_get_region_pci,
@@ -85,13 +37,13 @@ bea_targets <- list(
     tar_target(
       bea_regional_pci,
       f_get_regional_bea_income(
-        target_shp      = shp_sym,
-        cbsa_shp_2022   = cbsa_shp_2022, 
-        cnty_shp_2020   = cnty_shp_2020, 
-        dt_bea_cbsa_pci = bea_cbsa_pci,  
-        dt_bea_cnty_pci = bea_county_income,
-        geog_level      = geog_level,   
-        geog_yr         = geog_yr       
+        target_shp            = shp_sym,
+        cbsa_shp_2023         = cbsa_shp_2023, 
+        cnty_shp_2020         = cnty_shp_2020,
+        file_raw_bea_cbsa     = file_raw_bea_cbsa2023,
+        file_raw_bea_cnty     = file_raw_bea_cnty2020, 
+        geog_level            = geog_level,   
+        geog_yr               = geog_yr       
       )
     )
   )
