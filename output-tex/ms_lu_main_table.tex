@@ -1,0 +1,36 @@
+
+%Tex File: /Users/chandlerlutz/Dropbox/Research/LU6//Users/chandlerlutz/Dropbox/Research/LU6/output-tex/ms_lu_main_table.tex
+
+\begin{sidewaystable}[!htbp] \centering 
+  \caption{\textbf{Replication of \citet{MianSufi2014} -- Non-Tradable Employment and the Housing Net Worth}} 
+  \label{tab:ms_lu} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{8}{c}{\textit{Non-Tradable Emp. Growth, 2007-09}} \\ 
+\cline{2-9} 
+\\[-1.8ex] & Rest. \& & Geog. & Rest. \& & Geog. & Rest. \& & Geog. & Rest. \& & Geog. \\ 
+ & Retail & Concen. & Retail & Concen. & Retail & Concen. & Retail & Concen. \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6) & (7) & (8)\\ 
+\hline \\[-1.8ex] 
+ $\Delta$ Housing Net Worth, 2006-09 & 0.174$^{***}$ & 0.166$^{***}$ & 0.374$^{***}$ & 0.208$^{**}$ & 0.160 & $-$0.073 & 0.201$^{***}$ & 0.193$^{***}$ \\ 
+  & (0.022) & (0.017) & (0.132) & (0.086) & (0.169) & (0.151) & (0.052) & (0.049) \\ 
+  & & & & & & & & \\ 
+\cline{2-9} \\[-2.0ex]
+First Stage $F$-Stat &  &  & 11.07 & 11.07 & 3.49 & 3.49 & 403.53 & 403.53 \\
+First Stage Partial $R^2$ &  &  & 0.12 & 0.12 & 0.03 & 0.03 & 0.41 & 0.41 \\
+\\[-1.83ex]
+\hline \\[-1.8ex] 
+Specification & OLS & OLS & IV & IV & IV & IV & IV & IV \\
+Instrument &  &  & Saiz & Saiz & Baum-Snow & Baum-Snow & LU-ML & LU-ML \\
+ &  &  & Elasticity & Elasticity & \& Han & \& Han &  &  \\
+ \\[-2.0ex]
+Number of Counties & 944 & 944 & 540 & 540 & 585 & 585 & 936 & 936 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\caption*{\footnotesize{\textit{Notes:} Columns 1 to 4 replicate \citet{MianSufi2014} using the equation $\Delta \log E_i^{NT} = \alpha + \eta \cdot \Delta \textit{HNW}_{i} + \varepsilon_i$. $\Delta \log E_i^{NT}$ is the log change in non-tradable employment for county $i$ and $\textit{HNW}_i$ is the change in housing net worth for county $i$. Mian and Sufi proxy non-tradable employment via the restaurant and retail sector (\textit{Rest. and Retail}) or through industries that have low geographic concentration (\textit{Geog. Concen.}). Columns (5) to (6) use the elasticity proxy from \citet{BaumSnowHan2024} as an instrument, while columns (7) and (8) employ the LU-ML IV. Controls include 23 two-digit 2006 employment shares. Robust standard errors are clustered by state. One, two, or three asterisks represent statistical significance at the 10, 5, and 1 percent levels, respectively.}}
+\end{sidewaystable} 
+
+
+

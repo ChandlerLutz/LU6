@@ -3886,6 +3886,42 @@
       "NeedsCompilation": "no",
       "Repository": "CRAN"
     },
+    "starpolishr": {
+      "Package": "starpolishr",
+      "Version": "0.0.0.9007",
+      "Source": "GitHub",
+      "Title": "polish stargazer (latex) files",
+      "Authors@R": "person(\"Chandler\", \"Lutz\", email = \"chandler.lutz@gmail.com\", role = c(\"aut\", \"cre\"))",
+      "Description": "A set of useful functions for polishing stargazer (latex) files.",
+      "Depends": [
+        "R (>= 3.3.2)"
+      ],
+      "License": "GPL-2",
+      "Encoding": "UTF-8",
+      "Imports": [
+        "stargazer",
+        "magrittr",
+        "stringr"
+      ],
+      "RoxygenNote": "7.3.2",
+      "Suggests": [
+        "testthat",
+        "knitr",
+        "rmarkdown",
+        "lfe",
+        "tools"
+      ],
+      "VignetteBuilder": "knitr",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "starpolishr",
+      "RemoteUsername": "ChandlerLutz",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "864eca0b5095e3884251eb5c23c2e7fa71de1c50",
+      "NeedsCompilation": "no",
+      "Author": "Chandler Lutz [aut, cre]",
+      "Maintainer": "Chandler Lutz <chandler.lutz@gmail.com>"
+    },
     "stringi": {
       "Package": "stringi",
       "Version": "1.8.7",
