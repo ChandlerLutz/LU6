@@ -10,8 +10,13 @@ shp_targets <- list(
 
   ## Raw shapefiles
   tar_target(
+    file_raw_shp_zip3_2000,
+    here::here("data-raw/census/shp/35-zip3_2000_shapefile.rds"),
+    format = "file"
+  ),
+  tar_target(
     shp_zip3_2000,
-    readRDS(here::here("data-raw/census/shp/35-zip3_2000_shapefile.rds")) %>%
+    readRDS(file_raw_shp_zip3_2000) %>%
       st_set_crs(4269) %>% st_transform(crs = 5070) %>% as.data.table() %>%
       .[, GISJOIN := paste0("G", GEOID)], 
     format = "rds"
