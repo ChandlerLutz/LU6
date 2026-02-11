@@ -35,12 +35,27 @@ lu_ml_targets <- list(
   
   ## LU-ML Raw Files
   tar_target(
+    file_raw_lu_cbsa_2009,
+    f_get_lu_raw_file_loc("110-cbsa/cbsa_shp_last_yr=2023/cbsa_lu_2009.parquet"),
+    format = "file"
+  ),
+  tar_target(
+    file_raw_lu_cbsa_2015,
+    f_get_lu_raw_file_loc("110-cbsa/cbsa_shp_last_yr=2023/cbsa_lu_2015.parquet"),
+    format = "file"
+  ),
+  tar_target(
     file_raw_lu_cbsa_2020,
     f_get_lu_raw_file_loc("110-cbsa/cbsa_shp_last_yr=2023/cbsa_lu_2020.parquet"),
     format="file"),
   tar_target(
     file_raw_lu_cbsa_2022,
     f_get_lu_raw_file_loc("110-cbsa/cbsa_shp_last_yr=2023/cbsa_lu_2022.parquet"), 
+    format = "file"
+  ),
+  tar_target(
+    file_raw_lu_cbsa_2023,
+    f_get_lu_raw_file_loc("110-cbsa/cbsa_shp_last_yr=2023/cbsa_lu_2023.parquet"),
     format = "file"
   ),
   tar_target(
@@ -178,6 +193,46 @@ lu_ml_targets <- list(
       file_path_ms = file_raw_mian_sufi_2014,
       file_path_lu = file_raw_lu_cnty_2010,
       dt_regional_pci_panel = bea_regional_pci_county_2010
+    )
+  ),
+
+  ## Guren et al. (2021) LU-ML
+  tar_target(
+    dt_guren_et_al_lu_ml,
+    f_get_guren_et_al_lu_ml(
+      file_path_guren = file_guren_replicate_fst,
+      file_path_lu = file_raw_lu_cbsa_2015,
+      dt_regional_pci_panel = bea_regional_pci_cbsa_2015,
+      dt_hm_cycles = housing_cycles_panel
+    )
+  ),
+
+  ## Chaney et al. (2012) Replication LU-ML
+  tar_target(
+    dt_chaney_et_al_lu_ml,
+    f_get_chaney_et_al_lu_ml(
+      file_path_chaney = file_raw_chaney_2012,
+      file_path_lu = file_raw_lu_cbsa_2009,
+      dt_regional_pci_panel = bea_regional_pci_cbsa_2020,
+      dt_hm_cycles = housing_cycles_panel
+    )
+  ),
+
+  ## Stroebel and Vavra (2019) LU-ML
+  tar_target(
+    dt_stroebel_vavra_01_06_lu_ml,
+    f_get_stroebel_vavra_01_06_lu_ml(
+      file_path_hp = file_raw_sv_01_06,
+      file_path_lu = file_raw_lu_cbsa_2023,
+      dt_regional_pci_panel = bea_regional_pci_cbsa_2023
+    )
+  ),
+  tar_target(
+    dt_stroebel_vavra_07_11_lu_ml,
+    f_get_stroebel_vavra_07_11_lu_ml(
+      file_path_hp = file_raw_sv_07_11,
+      file_path_lu = file_raw_lu_cbsa_2023,
+      dt_regional_pci_panel = bea_regional_pci_cbsa_2023
     )
   )
 )

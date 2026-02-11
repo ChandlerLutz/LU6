@@ -14,4 +14,7 @@ targets_files <- list.files("targets", pattern = ".R$", full.names = TRUE,
 lapply(targets_files, source)
 
 c(shp_targets, replication_data, hp_indices_targets, bea_targets, lu_ml_targets,
-  bsh_targets, replication_targets)
+  bsh_targets,
+  ## Replication analysis
+  replication_mian_suf_2014_targets, replication_gurenetal_2021
+  )
