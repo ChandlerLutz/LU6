@@ -38,33 +38,6 @@ replication_mian_suf_2014_targets <- list(
 
 replication_gurenetal_2021 <- list(
 
-  # --- Data Prep & Merging ---
-  # Merges your existing LU-ML predictions (dt_guren_et_al_lu_ml) 
-  # with the full Guren data (for controls) and BSH data
-  tar_target(
-    dt_guren_merged,
-    f_prep_guren_merged_data(
-      dt_ml = dt_guren_et_al_lu_ml, 
-      file_guren_raw = file_guren_replicate_fst,
-      dt_bsh = dt_bsh_cbsa_2015
-    )
-  ),
+  
 
-  # --- Estimation ---
-  # Runs the panel regressions (OLS, Saiz, BSH, LU-ML)
-  tar_target(
-    dt_guren_reg_results,
-    f_estimate_guren_regressions(dt_guren_merged)
-  ),
-
-  # --- Table Output ---
-  # Formats the results into a LaTeX table
-  tar_target(
-    file_guren_tex_table,
-    f_write_guren_tex_table(
-      DT.reg.output = dt_guren_reg_results,
-      output_tex = here::here("output-tex/005-replicate/026-hw_panel_regs.tex")
-    ),
-    format = "file"
-  )
 )

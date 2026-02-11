@@ -42,5 +42,5 @@ replication_data <- list(
     file_raw_chaney_2012,
     here::here("data-raw/ChaneyEtAl2012/010-dt_chaneyetal_2012.parquet"),
     format = "file"
-  ),
+  )
 )
