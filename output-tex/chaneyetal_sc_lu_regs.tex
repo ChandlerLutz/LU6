@@ -1,0 +1,41 @@
+
+%Tex File: /Users/clutz15/Dropbox/Research/LU6//Users/clutz15/Dropbox/Research/LU6/output-tex/chaneyetal_sc_lu_regs.tex
+
+% Date and time: Fri, Feb 13, 2026 - 11:20:16
+\begin{table}[!htbp] \centering 
+  \caption{\textbf{First Stage House Price Regression as in \citet{ChaneyEtal2012}}} 
+  \label{tab:chaney_etal_2012_regs} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{MSA HP Residential Prices} \\ 
+\\[-1.8ex] & (1) & (2) & (3)\\ 
+\hline \\[-1.8ex] 
+ Saiz Elasticity $\times$ & 0.029$^{***}$ &  &  \\ 
+Natl Mortgage Rate  & (0.004) &  &  \\ 
+  & & & \\ 
+ Baum-Snow \& Han $\times$ &  & 0.026 &  \\ 
+Natl Mortgage Rate  &  & (0.017) &  \\ 
+  & & & \\ 
+ LU-ML &  &  & 0.823$^{***}$ \\ 
+  &  &  & (0.040) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+First Stage $F$-Stat & 43.13 & 2.38 & 418.63 \\
+First Stage Partial $R^{2}$ & 0.23 & 0.01 & 0.33 \\
+\\[-2.0ex] \hline \\[-2.0ex]
+Number of MSAs & 97 & 322 & 354 \\
+Observations & 1,358 & 4,499 & 4,936 \\ 
+\\[-2.0ex] \hline \\[-2.0ex]
+MSA Fixed Effects & \checkmark & \checkmark & \checkmark \\
+Time Fixed Effects & \checkmark & \checkmark & \checkmark \\
+\hline 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\caption*{\footnotesize{\textit{Notes:} Column (1) replicates the first stage regression in Table 3, column (1) of \citet{ChaneyEtal2012} that uses Saiz Elasticity as an instrument for house prices using their equation (2): $P_t^l = \alpha^l + \delta_t + \gamma \cdot \textit{Elasticity}^l \times \textit{IR}_t + u_t^l$. $P_t^l$ is the normalized residential house price index (in levels) for MSA $l$ in year $t$, $\alpha^l$ and  $\delta_t$ are MSA and time fixed effects, $\textit{Elasticity}^l \times \textit{IR}_t$ is the Saiz Elasticity proxy for each MSA multiplied by the national real mortgage rate, and $u_t^l$ is the error term. Column (2) uses our LU-ML instrument for 2007 MSAs instead of $\textit{Elasticity}^l \times \textit{IR}_t$. The sample period ranges from 1993 to 2007. Robust standard errors clustered at the MSA level are in parentheses. One, two, or three asterisks represent statistical significance at the 10, 5, and 1 percent levels, respectively.}}
+\end{table} 
+
+
+

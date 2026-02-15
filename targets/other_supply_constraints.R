@@ -75,9 +75,20 @@ bsh_targets <- list(
 
   # --- Aggregations (Metro, County, Zip3) ---
   
-  # Metros/CBSAs (Uses cbsa_shp_2010 from targets/shp.R)
+  # Metros/CBSAs (Uses cbsa_shp_YYYY from targets/shp.R)
   tar_target(
-    dt_bsh_metro_2010,
+    dt_bsh_cbsa_2009,
+    f_aggregate_baum_snow_han(
+      dt_bsh = dt_bsh_gammas_raw,
+      dt_shp = cbsa_shp_2009, 
+      dt_trct_hu = dt_trct_hu_2000,
+      sf_trct_shp = sf_trct_2000,
+      geog_level = "metro",
+      year = 2010
+    )
+  ),
+  tar_target(
+    dt_bsh_cbsa_2010,
     f_aggregate_baum_snow_han(
       dt_bsh = dt_bsh_gammas_raw,
       dt_shp = cbsa_shp_2010, 
@@ -96,6 +107,17 @@ bsh_targets <- list(
       sf_trct_shp = sf_trct_2000,
       geog_level = "metro",
       year = 2015
+    )
+  ),
+  tar_target(
+    dt_bsh_cbsa_2023,
+    f_aggregate_baum_snow_han(
+      dt_bsh = dt_bsh_gammas_raw,
+      dt_shp = cbsa_shp_2023,
+      dt_trct_hu = dt_trct_hu_2000,
+      sf_trct_shp = sf_trct_2000,
+      geog_level = "metro",
+      year = 2023
     )
   ),
   

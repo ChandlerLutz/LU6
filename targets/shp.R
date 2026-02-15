@@ -1,4 +1,4 @@
-## targets/shp.R
+
 
 box::use(
   magrittr[`%>%`], sf[st_set_crs, st_transform],
@@ -23,29 +23,39 @@ shp_targets <- list(
   ),
   tar_target(shp_zip5_2020,
              CLmisc::get_rnhgis_shp("us_zcta_2020_tl2020") %>%
-               st_transform(crs = 4269) %>% 
+               st_transform(crs = 5070) %>% 
                as.data.table() %>% .[, GEOID := GEOID20], 
              format = "rds"), 
   tar_target(shp_trct_1980,
              CLmisc::get_rnhgis_shp("us_tract_1980_tl2008") %>%
+               st_transform(crs = 5070) %>%
                as.data.table(),
              format = "rds"),
   tar_target(shp_trct_1990,
              CLmisc::get_rnhgis_shp("us_tract_1990_tl2008") %>%
+               st_transform(crs = 5070) %>%
                as.data.table(),
              format = "rds"),
   tar_target(shp_trct_2000,
              CLmisc::get_rnhgis_shp("us_tract_2000_tl2010") %>%
+               st_transform(crs = 5070) %>%
                as.data.table(),
              format = "rds"),
   tar_target(shp_trct_2010,
              CLmisc::get_rnhgis_shp("us_tract_2010_tl2020") %>%
+               st_transform(crs = 5070) %>%
                as.data.table(),
              format = "rds"),
   tar_target(shp_trct_2020,
              CLmisc::get_rnhgis_shp("us_tract_2020_tl2020") %>%
+               st_transform(crs = 5070) %>%
                as.data.table(),
              format = "rds"),
+  tar_target(
+    file_raw_census_st_regions_div,
+    here::here("data-raw/census/census_regions_divisions_states.csv"),
+    format = "file"
+  ), 
 
   ## county cleaned shps
   tarchetypes::tar_map(
@@ -75,9 +85,17 @@ shp_targets <- list(
 
   ## MSA/CBSA shp
   tar_target(
-    raw_msa_shp_1999_file, here::here("data-raw/shp/10-saiz1999msa_shapefile.rds"), 
+    raw_msa_shp_1999_file,
+    here::here("data-raw/shp/10-saiz1999msa_shapefile.rds"), 
     format = "file"
   ),
+  tar_target(
+    msa_shp_1999,
+    readRDS(raw_msa_shp_1999_file) %>%
+      st_set_crs(4269) %>% st_transform(crs = 5070) %>% as.data.table() %>%
+      .[, GEOID := as.character(GEOID)],
+    format = "rds"
+  ), 
   tar_target(
     raw_cbsa_shp_2007_file, here::here("data-raw/shp/cbsa2007_shp.rds"), format = "file"
   ), 
@@ -88,7 +106,8 @@ shp_targets <- list(
       cbsa_shp,
       f_get_msa_cbsa_shp(
         year = year,dt_nhgis_shp_metadata = nhgis_shp_metadata,
-        file_path_1999 = raw_msa_shp_1999_file, file_path_2007 = raw_cbsa_shp_2007_file
+        file_path_1999 = raw_msa_shp_1999_file,
+        file_path_2007 = raw_cbsa_shp_2007_file
       ),
       format = "rds"
     )
@@ -124,6 +143,22 @@ shp_targets <- list(
       shp_trct_2010 = shp_trct_2010,
       shp_trct_2020 = shp_trct_2020
     )
+  ),
+
+  tarchetypes::tar_map(
+    values = tibble::tibble(
+      year = c(1999, 2000, 2007, 2009, 2010, 2013:2023),
+      shp = rlang::syms(paste0("cbsa_shp_", c(1999, 2000, 2007, 2009, 2010, 2013:2023)))
+    ),
+    names = "year",
+        tar_target(
+          dt_division_cbsa,
+          f_get_cbsa_to_census_division_cw(
+            dt_cbsa = shp, 
+            census_regions_path = file_raw_census_st_regions_div
+          )
+        )
   )
+  
   
 )

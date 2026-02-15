@@ -19,7 +19,8 @@ f_get_nhgis_shp_metadata <- function() {
 f_get_cnty_shp <- function(year, dt_nhgis_shp_metadata) {
 
   box::use(
-    data.table[...], magrittr[`%>%`], CLmisc[select_by_ref, get_rnhgis_shp] 
+    data.table[...], magrittr[`%>%`], CLmisc[select_by_ref, get_rnhgis_shp],
+    sf[st_transform]
   )
 
   yr_tmp <- year
@@ -34,6 +35,7 @@ f_get_cnty_shp <- function(year, dt_nhgis_shp_metadata) {
 
   dt_cnty_shp <- get_rnhgis_shp(shp = nhgis_shp_nm) %>%
     as.data.table() %>%
+    .[, geometry := st_transform(geometry, 5070)] %>%
     .[, GEOID := paste0(substr(GISJOIN, 2, 3), substr(GISJOIN, 5, 7))]
 
   name_var <- names(dt_cnty_shp) %>% .[grepl("^NAME|^NHGISNAM", .)] %>% .[1]
@@ -54,7 +56,7 @@ f_get_msa_cbsa_shp <- function(year, dt_nhgis_shp_metadata, file_path_1999 = NUL
   
   box::use(
     data.table[...], magrittr[`%>%`], CLmisc[select_by_ref, get_rnhgis_shp],
-    sf[st_set_crs]
+    sf[st_set_crs, st_transform]
   )
   
   yr_tmp <- year
@@ -129,6 +131,9 @@ f_get_msa_cbsa_shp <- function(year, dt_nhgis_shp_metadata, file_path_1999 = NUL
 
   stopifnot(names(dt_msa_cbsa_shp) == c("GISJOIN", "GEOID", "NAME", "year", "geometry"))
 
+  dt_msa_cbsa_shp <- dt_msa_cbsa_shp %>%
+    .[, geometry := st_transform(geometry, 5070)]
+  
   return(dt_msa_cbsa_shp)
 }
 
@@ -159,7 +164,8 @@ f_get_cz20_shp <- function(file_path_cnty23_cz20_cw, dt_cnty_shp) {
     summarize(geometry = st_union(geometry)) %>%
     ungroup() %>%
     as.data.table() %>%
-    .[, geometry := st_cast(geometry, to = "MULTIPOLYGON")]
+    .[, geometry := st_cast(geometry, to = "MULTIPOLYGON")] %>%
+    .[, geometry := st_transform(geometry, 5070)]
 
   stopifnot(
     dt_cz20_shp[duplicated(cz20)] %>% nrow() == 0,
@@ -280,4 +286,48 @@ f_get_tract_to_nhgis_tract_cw <- function(dt_nhgis_cw_raw,
     setcolorder(colorder_orig)
 
   return(dt_out)
+}
+
+f_get_cbsa_to_census_division_cw <- function(dt_cbsa, census_regions_path) {
+  
+  box::use(
+    data.table[...], magrittr[`%>%`], CLmisc[select_by_ref]
+  )
+  
+  dt_cbsa <- copy(dt_cbsa)
+  
+  required_cols <- c("GISJOIN", "year")
+  if (!all(required_cols %in% names(dt_cbsa))) {
+    stop("dt_cbsa is missing required columns: ",
+         paste(setdiff(required_cols, names(dt_cbsa)), collapse = ", "))
+  }
+  
+  name_var <- names(dt_cbsa)[grepl("NAME", names(dt_cbsa))][1]
+  
+  if (is.na(name_var)) {
+    stop("dt_cbsa is missing a column containing 'NAME'")
+  }
+  
+  dt_cbsa[, name_col := iconv(name_col, from = "LATIN1", to = "UTF-8"),
+          env = list(name_col = name_var)]
+  
+  cbsa_yr <- dt_cbsa[1, year]
+  
+  dt_st_regions_div <- fread(
+    census_regions_path,
+    colClasses = "character"
+  ) %>%
+    select_by_ref(c("stabb", "census_region", "census_division"))
+  
+  dt_cw_cbsa_div_region <- dt_cbsa %>%
+    select_by_ref(c("GISJOIN", name_var)) %>%
+    .[, st_first := gsub(".*\\, ([A-Z]{2}).*$", "\\1", name_col),
+      env = list(name_col = name_var)] %>%
+    merge(dt_st_regions_div, by.x = "st_first", by.y = "stabb", all.x = TRUE) %>%
+    setnames(name_var, "cbsa_name") %>%
+    setcolorder(c("GISJOIN", "cbsa_name", "st_first", "census_region",
+                  "census_division")) %>%
+    setnames("GISJOIN", paste0("gjoin_cbsa_", cbsa_yr))
+  
+  return(dt_cw_cbsa_div_region)
 }

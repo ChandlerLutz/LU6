@@ -1,0 +1,51 @@
+### R ###
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+### renv ###
+renv/library/
+renv/python/
+renv/staging/
+
+### targets ###
+_targets/
+
+### Operating System & Editors ###
+.DS_Store
+*~
+*.el
+*emacs*
+*.#-emacs*
+
+### Data Files ###
+*.parquet
+*.rds
+*.dta
+*.Rdata
+*.tar.gz
+*.csv
+*.txt
+*.xls
+*.xlsx
+
+### Project Specific Directories ###
+data-cleaned/
+data-pub/
+data-raw/
+work/
+literature/
+scratch/
+
+### Additional Claude Code ignores ###
+# Version control
+.git/
+
+# renv library metadata (large, not useful for context)
+renv/sandbox/
+renv/cellar/
+
+# Lock files and caches
+*.lock
+.Rprofile
