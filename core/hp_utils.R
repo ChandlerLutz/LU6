@@ -270,6 +270,29 @@ f_get_fhfa_qtrly_at_hpi <- function(geog_level, file_path_raw, dt_to_cz20_cw = N
   return(dt)
 }
 
+f_get_zillow_hp_natl <- function(file_path_metro) {
+
+  box::use(
+    data.table[...], magrittr[`%>%`], nanoparquet[read_parquet],
+    lubridate[floor_date], stringi[stri_extract, stri_length], CLmisc[select_by_ref]
+  )
+
+  dt <- read_parquet(file_path_metro) %>% setDT() %>%
+    .[RegionType == "country"] %>%
+    melt(id.vars = c("RegionID", "SizeRank", "RegionName", "RegionType", "StateName"),
+         measure.vars = patterns("^20"), variable.name = "index", value.name = "zhvi",
+         variable.factor = FALSE) %>%
+    select_by_ref(c("index", "zhvi")) %>%
+    .[, index := floor_date(as.Date(index), unit = "month")] %>%
+    setorder(index) %>%
+    .[, hp_natl := zhvi] %>%
+    .[, dlog_yoy_hp_natl := log(hp_natl) - shift(log(hp_natl), n = 12)]
+
+  return(dt)
+
+}
+
+
 f_get_zillow_hp_cbsa <- function(file_path_metro, file_path_county, cbsa_shp, cz20_shp) {
   
   box::use(

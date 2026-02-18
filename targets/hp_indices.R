@@ -100,6 +100,9 @@ hp_indices_targets <- list(
   ),
 
   tar_target(
+    zillow_natl_hp, f_get_zillow_hp_natl(file_raw_zillow_cbsa)
+  ),
+  tar_target(
     zillow_hp_cbsa,
     f_get_zillow_hp_cbsa(
       file_path_metro = file_raw_zillow_cbsa, file_path_county = file_raw_zillow_county,

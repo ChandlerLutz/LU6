@@ -296,7 +296,7 @@ f_get_cbsa_to_census_division_cw <- function(dt_cbsa, census_regions_path) {
   
   dt_cbsa <- copy(dt_cbsa)
   
-  required_cols <- c("GISJOIN", "year")
+  required_cols <- c("GEOID", "GISJOIN", "year")
   if (!all(required_cols %in% names(dt_cbsa))) {
     stop("dt_cbsa is missing required columns: ",
          paste(setdiff(required_cols, names(dt_cbsa)), collapse = ", "))
@@ -311,7 +311,8 @@ f_get_cbsa_to_census_division_cw <- function(dt_cbsa, census_regions_path) {
   dt_cbsa[, name_col := iconv(name_col, from = "LATIN1", to = "UTF-8"),
           env = list(name_col = name_var)]
   
-  cbsa_yr <- dt_cbsa[1, year]
+  cbsa_yr <- unique(dt_cbsa$year)
+  stopifnot(length(cbsa_yr) == 1)
   
   dt_st_regions_div <- fread(
     census_regions_path,
@@ -320,14 +321,15 @@ f_get_cbsa_to_census_division_cw <- function(dt_cbsa, census_regions_path) {
     select_by_ref(c("stabb", "census_region", "census_division"))
   
   dt_cw_cbsa_div_region <- dt_cbsa %>%
-    select_by_ref(c("GISJOIN", name_var)) %>%
+    select_by_ref(c("GISJOIN", "GEOID", name_var)) %>%
     .[, st_first := gsub(".*\\, ([A-Z]{2}).*$", "\\1", name_col),
       env = list(name_col = name_var)] %>%
     merge(dt_st_regions_div, by.x = "st_first", by.y = "stabb", all.x = TRUE) %>%
     setnames(name_var, "cbsa_name") %>%
-    setcolorder(c("GISJOIN", "cbsa_name", "st_first", "census_region",
+    setcolorder(c("GISJOIN", "GEOID", "cbsa_name", "st_first", "census_region",
                   "census_division")) %>%
-    setnames("GISJOIN", paste0("gjoin_cbsa_", cbsa_yr))
+    setnames("GISJOIN", paste0("gjoin_cbsa_", cbsa_yr)) %>%
+    setnames("GEOID", paste0("geoid_cbsa_", cbsa_yr))
   
   return(dt_cw_cbsa_div_region)
 }

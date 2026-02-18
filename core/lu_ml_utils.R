@@ -166,7 +166,8 @@ f_get_universal_lu_ml_panel <- function(dt_hp, dt_lu, dt_regional_pci_panel,
 
   dt_input <- dt_est_data[, .(GEOID, index, hp.target)]
 
-  dt_lu_ml <- f_run_lu_ml(dt_input, dt_lu, run_in_parallel = TRUE)
+  dt_lu_ml <- f_run_lu_ml(dt_input, dt_lu, run_in_parallel = TRUE) %>%
+    select_by_ref(c("GEOID", "index", "lu_ml_xgboost"))
 
   dt_out <- merge(dt_est_data, dt_lu_ml, by = c("GEOID", "index"), all.x = TRUE) %>%
     .[, index_char := NULL] 
