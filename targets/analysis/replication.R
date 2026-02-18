@@ -32,12 +32,12 @@ replication_mian_sufi_2014_targets <- list(
       dt_regression_stats = dt_ms_replication_regression_stats,
       output_tex = here::here("output-tex/ms_lu_main_table.tex")
     ),
-    format = "file"
+    format = "file" 
   )
 )
 
-replication_gurenetal_2021_targets <- list(
 
+replication_gurenetal_2021_targets <- list(
   tar_target(
     guren_etal_tab1_models,
     f_est_guren_etal_tab1_models(file_guren_replicate_fst),
@@ -56,7 +56,7 @@ replication_gurenetal_2021_targets <- list(
     est_gurenetal_sc_lu_ml_reg_models(
       file_guren_replicate = file_guren_replicate_fst,
       dt_lu_ml = dt_guren_et_al_lu_ml, 
-      dt_bsh = dt_bsh_cbsa_2015
+      dt_bsh = dt_bsh_cbsa_2015        
     ),
     format = "rds"
   ),
@@ -73,24 +73,19 @@ replication_gurenetal_2021_targets <- list(
     ),
     format = "file"
   )
-  
 )
 
 replication_chaneyetal_2012_targets <- list(
-  
-  # -- Estimation -- #
   tar_target(
     dt_chaneyetal_sc_lu_ml_models,
     est_chaneyetal_sc_lu_ml_models(
       dt_chaneyetal_lu_ml = dt_chaney_et_al_lu_ml,
-      file_raw_chaney = file_raw_chaney_2012, # Added raw file dependency
+      file_raw_chaney = file_raw_chaney_2012, 
       dt_bsh_data = dt_bsh_cbsa_2009,
       dt_real_mtg_rate = dt_real_mtg_rate
     ),
     format = "rds"
   ),
-
-  # -- Outputs -- #
   tar_target(
     chaneyetal_sc_lu_ml_tex,
     create_chaneyetal_sc_lu_ml_tex(
@@ -99,7 +94,6 @@ replication_chaneyetal_2012_targets <- list(
     ),
     format = "file"
   ),
-
   tar_target(
     dt_chaneyetal_sc_lu_ml_reg_stats,
     extract_chaneyetal_sc_lu_ml_reg_stats(
@@ -109,11 +103,7 @@ replication_chaneyetal_2012_targets <- list(
   )
 )
 
-
 replication_stroebelvavra_2019_targets <- list(
-  
-
-  # -- Estimate Models -- #
   tar_target(
     dt_sv_2019_models,
     est_stroebel_vavra_2019_models(
@@ -125,8 +115,6 @@ replication_stroebelvavra_2019_targets <- list(
     ),
     format = "rds"
   ),
-
-  # -- Latex Output -- #
   tar_target(
     sv_2019_tex,
     create_stroebel_vavra_2019_tex(
@@ -135,8 +123,6 @@ replication_stroebelvavra_2019_targets <- list(
     ),
     format = "file"
   ),
-
-  # -- Parquet Statistics -- #
   tar_target(
     dt_sv_2019_stats,
     extract_stroebel_vavra_2019_stats(dt_sv_2019_models),

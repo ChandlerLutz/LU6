@@ -1,3 +1,4 @@
+## core/gurenetal_utils.R
 
 f_est_guren_etal_tab1_models <- function(file_path) {
   box::use(
@@ -244,32 +245,23 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
     CLmisc[reduce_felm_object_size]
   )
 
-  # -- 1. Data Prep -- #
-  
-  # Prep ML Data
-  # Fix: Select ONLY keys and prediction column to avoid 'lhpi_a' duplication in merge
   DT.lu.ml <- copy(dt_lu_ml) %>%
-    setnames("index", "date", skip_absent = TRUE) %>%
+    setnames(c("GEOID", "index"), c("cbsa", "date"), skip_absent = TRUE) %>%
     .[, cbsa := as.numeric(cbsa)] 
   
-  # Only keep the prediction column and keys. 
-  # Note: The user code later expects "lu_ml_xgboost" to be renamed to "z_lu_ml"
   cols_ml_keep <- intersect(names(DT.lu.ml), c("cbsa", "date", "lu_ml_xgboost"))
   DT.lu.ml <- DT.lu.ml[, ..cols_ml_keep]
 
-  # Prep BSH Data
   DT.bsh <- copy(dt_bsh) %>%
-    setnames("GEOID_metro", "cbsa") %>%
+    setnames("GEOID", "cbsa", skip_absent = TRUE) %>%
     .[, cbsa := as.numeric(cbsa)] %>%
     .[, .(cbsa, gamma01b_space_FMM)]
 
-  # Prep Guren Data
   DT <- read_fst(file_guren_replicate, as.data.table = TRUE) %>%
     .[, region.char := as.character(region)] %>%
     .[, date.char := as.character(date)] %>% 
     .[, date.region.char := paste0(date.char, "_", region.char)]
 
-  # Merge
   DT <- DT %>%
     merge(DT.lu.ml, by = c("cbsa", "date"), all.x = TRUE) %>%
     merge(DT.bsh, by = "cbsa", all.x = TRUE) %>%
@@ -278,13 +270,12 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
     .[, z_bsh := gamma01b_space_FMM * lhpi_usa_a] %>%
     setnames("lu_ml_xgboost", "z_lu_ml", skip_absent = TRUE)
 
-  # Keep/Delete Vars to save memory
   vars.to.keep <- c(
     "cbsa", "date",
     "lq_retail_a_nobad_pc", "lhpi_a", 
     "predict_control", "pc_additional_1", "pc_additional_2",
     "date.char", "cbsa.char", "date.region.char", "region.char", "division", 
-    "bl.ntile", # Needed for optional control
+    "bl.ntile",
     names(DT) %>% .[grepl("^dateX", x = .)],
     names(DT) %>% .[grepl("^z", x = .)]
   )
@@ -294,18 +285,13 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
     DT[, c(vars.to.delete) := NULL]
   }
 
-  # Only use cbsas in the LU data
   DT <- DT[!is.na(z_lu_ml)]
-
-  # -- 2. Define Helper Functions -- #
 
   f_add_stage1_r2_to_felm_model <- function(felm.model) {
     stage1.summary <- summary(felm.model$stage1)
     felm.model$stage1.r2 <- stage1.summary$r2
     return(felm.model)
   }
-
-  # -- 3. Regression Logic -- #
 
   DT.reg.options <- expand.grid(
     startyr = c(1978, 1990, 2000),
@@ -325,7 +311,6 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
 
     DT.tmp <- DT[year(date) >= startyr]
 
-    ## Drop the industry control variables that are associated with dates before startyr
     ind.share.vars.to.drop <- data.table(
       ind.share.var = (names(DT.tmp) %>% .[grepl("dateX.share", x = .)])
     ) %>%
@@ -343,7 +328,6 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
     DT.tmp.saiz <- DT.tmp[!is.na(z_saiz)]
     DT.tmp.bsh <- DT.tmp[!is.na(z_bsh)]
 
-    ## The controls 
     controls <- c("1")
     DT.names <- names(DT.tmp)
     if (DT.opts$ind.controls == TRUE)
@@ -351,7 +335,6 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
     if (DT.opts$prediction.controls == TRUE)
       controls <- c(controls, DT.names %>% .[grepl("predict_control|pc_additional",x = .)])
 
-    ## The FE
     fe <- "date.char"
     if (DT.opts$fixed.effects == "date.region") {
       fe <- paste0(fe, " ^ region.char")
@@ -361,7 +344,6 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
     if (DT.opts$buildable.land.controls == TRUE)
       fe <- paste0(fe, " + bl.ntile")
 
-    # Define variables to residualize
     vars.to.residualize = DT.names %>%
       .[grepl("^z", x = .)] %>%
       .[!(. %chin% c("z_saiz", "z_saiz_unaval"))] %>%
@@ -404,7 +386,6 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
         lq_retail_a_nobad_pc ~ 1 | 0 | (lhpi_a ~ ..ivs) | date.char + cbsa.char,
         ..ivs = ivs
       )
-      # Run feols to get lean stats
       f.feols <- xpd(
         lq_retail_a_nobad_pc ~ 1 | 0 | lhpi_a ~ ..ivs,
         ..ivs = ivs
@@ -425,7 +406,6 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
     mod.ols <- f_reg_ols(DT.residualized)
     mod.sensitivity <- f_reg(ivs = "z", DT.residualized)
     mod.saiz <- f_reg(ivs = "z_saiz", DT.residualized.saiz)
-    # mod.saiz.unaval <- f_reg(ivs = "z_saiz_unaval", DT.residualized.saiz)
     mod.bsh <- f_reg(ivs = "z_bsh", DT.residualized.bsh)
     mod.best.ml.lu <- f_reg(ivs = c("z_lu_ml"), DT.residualized)
     mod.sensitivity.best.ml.lu <- f_reg(ivs = c("z_lu_ml", "z"), DT.residualized)
@@ -435,7 +415,6 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
       mod.ols = list(mod.ols),
       mod.sensitivity = list(mod.sensitivity),
       mod.saiz = list(mod.saiz),
-      # mod.saiz.unaval = list(mod.saiz.unaval), 
       mod.bsh = list(mod.bsh),
       mod.best.ml.lu = list(mod.best.ml.lu),
       mod.sensitivity.best.ml.lu = list(mod.sensitivity.best.ml.lu)
@@ -443,7 +422,6 @@ est_gurenetal_sc_lu_ml_reg_models <- function(file_guren_replicate, dt_lu_ml,
     return(DT.out)
   }
 
-  # -- 4. Run All Regressions -- #
   DT.reg.output <- lapply(DT.reg.options$id, f_run_regressions) %>%
     rbindlist
 
@@ -499,8 +477,6 @@ create_gurenetal_sc_lu_reg_tex <- function(dt_reg_output, file_out) {
     utils[capture.output]
   )
 
-  # -- 1. Define Lookup Table -- #
-  # Defines the order and metadata for the columns in the table
   DT.models.lkp <- data.table(
     fixed.effects = "date.region",
     buildable.land.controls = FALSE,
@@ -525,8 +501,6 @@ create_gurenetal_sc_lu_reg_tex <- function(dt_reg_output, file_out) {
     .[, specification := fifelse(model.type == "mod.ols", "OLS", "IV")] %>%
     .[, cbsa.fe := "\\checkmark"]
 
-  # -- 2. Process Regression Output -- #
-  # Filter to relevant models and reshape to long format
   DT.reg <- dt_reg_output %>%
     .[ind.controls == TRUE & prediction.controls == TRUE & fixed.effects != "date.division"] %>%
     melt(
@@ -536,7 +510,6 @@ create_gurenetal_sc_lu_reg_tex <- function(dt_reg_output, file_out) {
       value.name = "model"
     )
 
-  # -- 3. Helper Functions -- #
   f_get_stage1_partial_r2 <- function(m) {
     if (is.null(m$stage1.r2)) return(NA_real_)
     return(m$stage1.r2)
@@ -554,10 +527,8 @@ create_gurenetal_sc_lu_reg_tex <- function(dt_reg_output, file_out) {
     return(sprintf("%.02f", felm.model[["iv_sargan"]][["p"]]))
   }
 
-  # -- 4. Panel Generation Function -- #
   f_tex_panel <- function(data.startyr) {
     
-    # Filter for year and merge with lookup to enforce column order
     DT.mods <- DT.reg[startyr == data.startyr] %>%
       merge(DT.models.lkp, by = c("fixed.effects", "buildable.land.controls", "model.type")) %>%
       setorder(mod.order)
@@ -569,14 +540,12 @@ create_gurenetal_sc_lu_reg_tex <- function(dt_reg_output, file_out) {
 
     mod.list <- DT.mods$model
 
-    # Standardize RHS names for stargazer
     mod.list <- lapply(mod.list, function(m) {
       m <- star_change_felm_rhs_names(m, old = "`lhpi_a(fit)`", new = "xvar")
       m <- star_change_felm_rhs_names(m, old = "lhpi_a", new = "xvar")
       return(m)
     })
 
-    # Calculate Stats Rows
     stage1.partial.r2 <- sapply(mod.list, f_get_stage1_partial_r2) %>%
       sprintf("%.02f", .) %>% gsub("NA", " ", .) %>%
       paste0(collapse = " & ") %>% paste0("First Stage Partial $R^2$ & ", ., " \\\\")
@@ -588,10 +557,8 @@ create_gurenetal_sc_lu_reg_tex <- function(dt_reg_output, file_out) {
     overid.pval <- sapply(mod.list, f_get_over_id_pval) %>%
       paste0(collapse = " & ") %>% paste0("OverID p-value & ", ., " \\\\")
 
-    # Capture dummy text output
     capture.output(stargazer(mod.list, type = "text", keep = "xvar", keep.stat = "n"))
 
-    # Generate Latex Panel
     star.out <- stargazer(
       mod.list, type = "latex",
       title = r"(\textbf{2SLS Housing Wealth Elasticity Estimates as in \citet{GurenEtAl2021}})",
@@ -600,9 +567,8 @@ create_gurenetal_sc_lu_reg_tex <- function(dt_reg_output, file_out) {
     ) %>%
       star_rhs_names("xvar", line1 = "YoY Log Diff in", line2 = "House Prices") %>%
       sub("\\\\textit\\{Dependent variable:\\}", "YoY Log Diff in Retail Emp Per Capita", x = .) %>%
-      .[!grepl("lq.*retail", x = .)] # Remove default dependent var line
+      .[!grepl("lq.*retail", x = .)] 
 
-    # Insert Stats Rows
     obs.line <- grep("^Observations", star.out)[1]
     star.out <- star_insert_row(star.out, string = c(stage1.fstat, stage1.partial.r2), insert.after = obs.line) %>%
       .[!grepl("^Observations", x = .)]
@@ -610,7 +576,6 @@ create_gurenetal_sc_lu_reg_tex <- function(dt_reg_output, file_out) {
     return(star.out)
   }
 
-  # -- 5. Create and Combine Panels -- #
   star.panel <- lapply(c(1978, 1990, 2000), f_tex_panel) %>%
     star_panel(
       starlist = .,
@@ -619,7 +584,6 @@ create_gurenetal_sc_lu_reg_tex <- function(dt_reg_output, file_out) {
       panel.label.fontface = "bold"
     )
 
-  # -- 6. Add Bottom Matter -- #
   f_get_iv_row <- function(index) {
     DT.models.lkp$ivs %>% lapply(function(x) x[index]) %>% do.call("c", args = .) %>%
       paste0(collapse = " & ")

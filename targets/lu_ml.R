@@ -47,7 +47,8 @@ lu_ml_targets <- list(
   tar_target(
     file_raw_lu_cbsa_2020,
     f_get_lu_raw_file_loc("110-cbsa/cbsa_shp_last_yr=2023/cbsa_lu_2020.parquet"),
-    format="file"),
+    format="file"
+  ),
   tar_target(
     file_raw_lu_cbsa_2022,
     f_get_lu_raw_file_loc("110-cbsa/cbsa_shp_last_yr=2023/cbsa_lu_2022.parquet"), 
@@ -69,11 +70,14 @@ lu_ml_targets <- list(
     format="file"
   ),
   tar_target(
-    file_raw_lu_zip5_2020, f_get_lu_raw_file_loc("051-zip2020/zip2020_lu_all.parquet"),
+    file_raw_lu_zip5_2020, 
+    f_get_lu_raw_file_loc("051-zip2020/zip2020_lu_all.parquet"),
     format="file"
   ),
   tar_target(
-    file_raw_lu_zip3, f_get_lu_raw_file_loc("055-zip3/zip3_lu_all.parquet"), format="file"
+    file_raw_lu_zip3, 
+    f_get_lu_raw_file_loc("055-zip3/zip3_lu_all.parquet"), 
+    format="file"
   ),
   tar_target(
     file_raw_lu_trct,
@@ -84,93 +88,96 @@ lu_ml_targets <- list(
   ## FMCC LU-ML panel
   tar_target(
     fmcc_cbsa_hpi_lu_ml_panel,
-    f_get_fmcc_cbsa_hpi_lu_ml_panel(
-      dt_fmcc_hp_panel = fmcc_cbsa_hp,
-      file_path_lu = file_raw_lu_cbsa_2022,
+    f_get_universal_lu_ml_panel(
+      dt_hp = fmcc_cbsa_hp,
+      dt_lu = f_prep_lu_data(file_raw_lu_cbsa_2022, geog_id_col = "GEOID"),
       dt_regional_pci_panel = bea_regional_pci_cbsa_2020,
-      dt_hm_cycles = housing_cycles_panel,
-      dt_cbsa_shp = cbsa_shp_2022
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2020,
+      dt_hm_cycles = housing_cycles_panel
     )
   ), 
 
   ## FHFA Annual LU-ML panel
   tar_target(
     fhfa_hpi_lu_ml_cbsa_panel,
-    f_get_fhfa_cbsa_annual_lu_ml_panel(
+    f_get_universal_lu_ml_panel(
       dt_hp = fhfa_annual_hp_cbsa,
-      file_path_lu = file_raw_lu_cbsa_2020,
+      dt_lu = f_prep_lu_data(file_raw_lu_cbsa_2020, geog_id_col = "GEOID"),
       dt_regional_pci_panel = bea_regional_pci_cbsa_2020,
-      dt_hm_cycles = housing_cycles_panel,
-      dt_shp = cbsa_shp_2020
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2020,
+      dt_hm_cycles = housing_cycles_panel
     )
   ),
   tar_target(
     fhfa_hpi_lu_ml_cnty_panel,
-    f_get_fhfa_county_annual_lu_ml_panel(
+    f_get_universal_lu_ml_panel(
       dt_hp = fhfa_annual_hp_cnty,
-      file_path_lu = file_raw_lu_cnty_2020,
+      dt_lu = f_prep_lu_data(file_raw_lu_cnty_2020, geog_id_col = "GEOID"),
       dt_regional_pci_panel = bea_regional_pci_county_2020,
-      dt_hm_cycles = housing_cycles_panel,
-      dt_shp = cnty_shp_2020
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_county_2020,
+      dt_hm_cycles = housing_cycles_panel
     )
   ),
   tar_target(
     fhfa_hpi_lu_ml_zip5,
-    f_get_fhfa_zip5_annual_lu_ml_panel(
+    f_get_universal_lu_ml_panel(
       dt_hp = fhfa_annual_hp_zip5,
-      file_path_lu = file_raw_lu_zip5_2020,
+      dt_lu = f_prep_lu_data(file_raw_lu_zip5_2020, geog_id_col = "zip5"),
       dt_regional_pci_panel = bea_regional_pci_zip5_2020,
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_zip5_2020,
       dt_hm_cycles = housing_cycles_panel
     )
   ),
   tar_target(
     fhfa_hpi_lu_ml_zip3,
-    f_get_fhfa_zip3_annual_lu_ml_panel(
+    f_get_universal_lu_ml_panel(
       dt_hp = fhfa_annual_hp_zip3,
-      file_path_lu = file_raw_lu_zip3,
+      dt_lu = f_prep_lu_data(file_raw_lu_zip3, geog_id_col = "zip3"),
       dt_regional_pci_panel = bea_regional_pci_zip3_2000,
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_zip3_2000,
       dt_hm_cycles = housing_cycles_panel
     )
   ),
   tar_target(
     fhfa_hpi_lu_ml_trct_panel,
-    f_get_fhfa_tract_annual_lu_ml_panel(
+    f_get_universal_lu_ml_panel(
       dt_hp = fhfa_annual_hp_trct,
-      file_path_lu = file_raw_lu_trct,
+      dt_lu = f_prep_lu_data(file_raw_lu_trct, geog_id_col = "NHGISCODE",
+                             dt_tract_cw = cw_trct_nhgis_trct),
       dt_regional_pci_panel = bea_regional_pci_tract_2020,
-      dt_hm_cycles = housing_cycles_panel, 
-      dt_shp = shp_trct_2020,
-      dt_tract_cw = cw_trct_nhgis_trct
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_tract_2020,
+      dt_hm_cycles = housing_cycles_panel
     )
   ),
 
   ## Zillow LU-ML panel
   tar_target(
     zillow_hpi_lu_ml_cbsa_panel,
-    f_get_zillow_cbsa_zhvi_lu_ml_panel(
+    f_get_universal_lu_ml_panel(
       dt_hp = zillow_hp_cbsa,
-      file_path_lu = file_raw_lu_cbsa_2022,
+      dt_lu = f_prep_lu_data(file_raw_lu_cbsa_2022, geog_id_col = "GEOID"),
       dt_regional_pci_panel = bea_regional_pci_cbsa_2022,
-      dt_hm_cycles = housing_cycles_panel,
-      dt_shp = cbsa_shp_2022 
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2022,
+      dt_hm_cycles = housing_cycles_panel
     )
   ),
   tar_target(
     zillow_hpi_lu_ml_cnty_panel,
-    f_get_zillow_county_zhvi_lu_ml_panel(
+    f_get_universal_lu_ml_panel(
       dt_hp = zillow_hp_county,
-      file_path_lu = file_raw_lu_cnty_2020,
+      dt_lu = f_prep_lu_data(file_raw_lu_cnty_2020, geog_id_col = "GEOID"),
       dt_regional_pci_panel = bea_regional_pci_county_2020,
-      dt_hm_cycles = housing_cycles_panel,
-      dt_shp = cnty_shp_2020
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_county_2020,
+      dt_hm_cycles = housing_cycles_panel
     )
   ),
   tar_target(
     zillow_hpi_lu_ml_zip5_panel,
-    f_get_zillow_zip5_zhvi_lu_ml_panel(
+    f_get_universal_lu_ml_panel(
       dt_hp = zillow_hp_zip,
-      file_path_lu = file_raw_lu_zip5_2020,
+      dt_lu = f_prep_lu_data(file_raw_lu_zip5_2020, geog_id_col = "zip5"),
       dt_regional_pci_panel = bea_regional_pci_zip5_2020,
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_zip5_2020,
       dt_hm_cycles = housing_cycles_panel
     )
   ),
@@ -178,21 +185,23 @@ lu_ml_targets <- list(
   ## FHFA Quarterly zip3 LU-ML panel
   tar_target(
     fhfa_qtrly_hpi_lu_ml_zip3,
-    f_get_fhfa_zip3_qtrly_lu_ml_panel(
+    f_get_universal_lu_ml_panel(
       dt_hp = fhfa_hpi_qtr_zip3,
-      file_path_lu = file_raw_lu_zip3,
+      dt_lu = f_prep_lu_data(file_raw_lu_zip3, geog_id_col = "zip3"),
       dt_regional_pci_panel = bea_regional_pci_zip3_2000,
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_zip3_2000,
       dt_hm_cycles = housing_cycles_panel
     )
-  ),
+  ), 
 
   ## Mian and Sufi (2014) LU-ML
   tar_target(
     dt_mian_sufi_lu_ml,
     f_get_mian_sufi_lu_ml(
       file_path_ms = file_raw_mian_sufi_2014,
-      file_path_lu = file_raw_lu_cnty_2010,
-      dt_regional_pci_panel = bea_regional_pci_county_2010
+      dt_lu = f_prep_lu_data(file_raw_lu_cnty_2010, geog_id_col = "GEOID"),
+      dt_regional_pci_panel = bea_regional_pci_county_2010,
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_county_2023
     )
   ),
 
@@ -201,8 +210,9 @@ lu_ml_targets <- list(
     dt_guren_et_al_lu_ml,
     f_get_guren_et_al_lu_ml(
       file_path_guren = file_guren_replicate_fst,
-      file_path_lu = file_raw_lu_cbsa_2015,
+      dt_lu = f_prep_lu_data(file_raw_lu_cbsa_2015, geog_id_col = "GEOID"),
       dt_regional_pci_panel = bea_regional_pci_cbsa_2015,
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2015, 
       dt_hm_cycles = housing_cycles_panel
     )
   ),
@@ -211,9 +221,10 @@ lu_ml_targets <- list(
   tar_target(
     dt_chaney_et_al_lu_ml,
     f_get_chaney_et_al_lu_ml(
-      file_path_chaney = file_raw_chaney_2012,
-      file_path_lu = file_raw_lu_cbsa_2009,
+      file_path_chaneyetal = file_raw_chaney_2012,
+      dt_lu_base = f_prep_lu_data(file_raw_lu_cbsa_2009, geog_id_col = "GEOID"),
       dt_regional_pci_panel = bea_regional_pci_cbsa_2020,
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2020,
       dt_hm_cycles = housing_cycles_panel
     )
   ),
@@ -223,17 +234,20 @@ lu_ml_targets <- list(
     dt_stroebel_vavra_01_06_lu_ml,
     f_get_stroebel_vavra_01_06_lu_ml(
       file_path_hp = file_raw_sv_01_06,
-      file_path_lu = file_raw_lu_cbsa_2023,
-      dt_regional_pci_panel = bea_regional_pci_cbsa_2023
+      dt_lu = f_prep_lu_data(file_raw_lu_cbsa_2023, geog_id_col = "GEOID"),
+      dt_regional_pci_panel = bea_regional_pci_cbsa_2023,
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2023
     )
   ),
   tar_target(
     dt_stroebel_vavra_07_11_lu_ml,
     f_get_stroebel_vavra_07_11_lu_ml(
       file_path_hp = file_raw_sv_07_11,
-      file_path_lu = file_raw_lu_cbsa_2023,
-      dt_regional_pci_panel = bea_regional_pci_cbsa_2023
+      dt_lu = f_prep_lu_data(file_raw_lu_cbsa_2023, geog_id_col = "GEOID"),
+      dt_regional_pci_panel = bea_regional_pci_cbsa_2023,
+      dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2023
     )
   )
+
 )
 

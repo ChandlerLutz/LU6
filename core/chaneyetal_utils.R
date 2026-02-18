@@ -8,57 +8,36 @@ est_chaneyetal_sc_lu_ml_models <- function(dt_chaneyetal_lu_ml, file_raw_chaney,
     nanoparquet[read_parquet]
   )
 
-  # -- 1. Data Preparation -- #
-
-  # A. Load Raw Chaney Data (Base)
-  # This provides 'saiz_rate', 'msa' names, and the structure for 'id' generation
   dt_raw <- read_parquet(file_raw_chaney) %>% 
     setDT() %>%
     .[, id := as.character(.GRP), by = .(msacode, msacode_orig, msa)]
   
-  # Remove existing real_mtg_rate from raw if present, to avoid duplicates/confusion with FRED data
   if ("real_mtg_rate" %in% names(dt_raw)) dt_raw[, real_mtg_rate := NULL]
 
-  # B. Prepare ML Predictions
   dt_ml <- as.data.table(dt_chaneyetal_lu_ml) %>%
-    .[, .(id, year, lu_ml = lu_ml_xgboost)] # Keep only keys and prediction
+    .[, .(id, year, lu_ml = lu_ml_xgboost)] 
 
-  # C. Prepare BSH Data
   dt_bsh_clean <- as.data.table(dt_bsh_data) %>%
-    .[, .(msacode = as.integer(GEOID_metro), gamma01b_space_FMM)]
+    .[, .(msacode = as.integer(GEOID), gamma01b_space_FMM)]
 
-  # D. Prepare Real Mortgage Rate (Annualize)
   dt_rate_annual <- as.data.table(dt_real_mtg_rate) %>%
     .[, .(real_mtg_rate = mean(real_mtg_rate, na.rm = TRUE)), by = .(year)]
 
-  # -- 2. Merge and Construct Variables -- #
-  
   DT <- dt_raw %>%
-    # Merge ML predictions (by id/year to match user logic)
     merge(dt_ml, by = c("id", "year"), all.x = TRUE) %>%
-    # Merge BSH Elasticity
     .[, msacode := as.integer(msacode)] %>%
     merge(dt_bsh_clean, by = "msacode", all.x = TRUE) %>%
-    # Merge FRED Real Mortgage Rate
     merge(dt_rate_annual, by = "year", all.x = TRUE) %>%
-    # Construct BSH Instrument
     .[, bsh_rate := gamma01b_space_FMM * real_mtg_rate] %>%
-    # Filter Sample
     .[year >= 1993] %>%
-    # Create Character FEs
     .[, `:=`(msa_char = as.character(msa), year_char = as.character(year))]
 
-  # -- 3. Estimate Models -- #
-  
-  # Model 1: Saiz (Uses 'saiz_rate' from raw file)
   mod_saiz <- felm(index_normalized ~ saiz_rate | msa_char + year_char | 0 | msa_char,
                    data = DT)
   
-  # Model 2: BSH (Uses constructed 'bsh_rate')
   mod_bsh <- felm(index_normalized ~ bsh_rate | msa_char + year_char | 0 | msa_char,
                   data = DT)
   
-  # Model 3: LU-ML (Uses merged 'lu_ml')
   mod_lu_ml <- felm(index_normalized ~ lu_ml | msa_char + year_char | 0 | msa_char,
                     data = DT)
 
@@ -86,7 +65,6 @@ create_chaneyetal_sc_lu_ml_tex <- function(est_output, file_out) {
   mod_bsh <- est_output$mod_bsh
   mod_lu_ml <- est_output$mod_lu_ml
 
-  # -- Helper: Partial Regression for Stats -- #
   f_reg_resid <- function(rhs) {
     dt_subset <- DT[!is.na(index_normalized) & !is.na(get(rhs))]
     
@@ -102,7 +80,6 @@ create_chaneyetal_sc_lu_ml_tex <- function(est_output, file_out) {
     felm(y_resid ~ 0 + x_resid | 0 | 0 | msa_char, data = dt_resid)
   }
 
-  # -- Helper Stats Functions -- #
   f_get_stage1_f <- function(mod) {
     tidy(mod) %>% setDT() %>% .[, statistic^2] %>% sprintf("%0.2f", .)
   }
@@ -115,7 +92,6 @@ create_chaneyetal_sc_lu_ml_tex <- function(est_output, file_out) {
     DT[!is.na(index_normalized) & !is.na(get(var)), uniqueN(msa)]
   }
 
-  # -- Generate Table -- #
   capture.output(stargazer(mod_saiz, mod_bsh, mod_lu_ml, type = "text"))
 
   star <- stargazer(
@@ -171,7 +147,6 @@ extract_chaneyetal_sc_lu_ml_reg_stats <- function(est_output) {
   mod_bsh <- est_output$mod_bsh
   mod_lu_ml <- est_output$mod_lu_ml
 
-  # -- Helper: Partial Regression for Stats -- #
   f_reg_resid <- function(rhs) {
     dt_subset <- DT[!is.na(index_normalized) & !is.na(get(rhs))]
     

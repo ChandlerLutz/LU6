@@ -1,7 +1,6 @@
 ## core/stroebelvavra_utils.R
 
 
-#' Estimate Stroebel and Vavra (2019) Replication Models
 est_stroebel_vavra_2019_models <- function(dt_lu_01_06, dt_lu_07_11, file_raw_01_06, file_raw_07_11, dt_bsh_data) {
   box::use(
     data.table[...],
@@ -10,22 +9,16 @@ est_stroebel_vavra_2019_models <- function(dt_lu_01_06, dt_lu_07_11, file_raw_01
     nanoparquet[read_parquet]
   )
 
-  # -- 1. Data Prep -- #
-  
-  # BSH Data
   dt_bsh <- copy(dt_bsh_data) %>%
     setDT() %>%
-    .[, .(cbsa2023 = as.character(GEOID_metro), bsh = gamma01b_space_FMM)]
+    .[, .(cbsa2023 = as.character(GEOID), bsh = gamma01b_space_FMM)]
 
-  # Helper to prep period data
   prep_period_data <- function(file_raw, dt_lu) {
-    # Clean LU Data: Rename keys to match SV data (cbsa -> cbsa2023)
     dt_lu_clean <- copy(dt_lu) %>%
       setnames("cbsa", "cbsa2023", skip_absent = TRUE) %>%
       setnames("lu_ml_xgboost", "lu_ml", skip_absent = TRUE) %>%
       .[, .(cbsa2023 = as.character(cbsa2023), lu_ml)]
 
-    # Load Raw SV Data and Merge
     read_parquet(file_raw) %>%
       setDT() %>%
       .[, cbsa2023 := as.character(cbsa2023)] %>%
@@ -36,17 +29,12 @@ est_stroebel_vavra_2019_models <- function(dt_lu_01_06, dt_lu_07_11, file_raw_01
   dt_01_06 <- prep_period_data(file_raw_01_06, dt_lu_01_06)
   dt_07_11 <- prep_period_data(file_raw_07_11, dt_lu_07_11)
 
-  # -- 2. Estimation Helper Functions -- #
-
-  # Function to run residual regression for partial R2 calculation
   f_reg_resid <- function(dt, rhs_var) {
     controls <- c("diffsharef", "diffsharen", "diffsharec", "diffu", "diffwage")
     
-    # Ensure complete cases
     dt_subset <- dt[!is.na(d_index_sa) & !is.na(get(rhs_var))]
     for (ctl in controls) dt_subset <- dt_subset[!is.na(get(ctl))]
 
-    # Residualize Y and X
     form_rhs <- as.formula(paste(rhs_var, "~", paste(controls, collapse = "+")))
     form_lhs <- as.formula(paste("d_index_sa ~", paste(controls, collapse = "+")))
     
@@ -59,24 +47,18 @@ est_stroebel_vavra_2019_models <- function(dt_lu_01_06, dt_lu_07_11, file_raw_01
       cbsa2023 = dt_subset$cbsa2023
     )
     
-    # Run partial regression
     felm(y_res ~ 1 + x_res | 0 | 0 | cbsa2023, data = dt_res)
   }
 
-  # Function to run the main regressions for a period
   run_period_models <- function(dt) {
-    
-    # Saiz
     m_saiz_1 <- felm(d_index_sa ~ elasticity | 0 | 0 | cbsa2023, data = dt)
     m_saiz_2 <- felm(d_index_sa ~ elasticity + diffsharef + diffsharen + diffsharec + diffu + diffwage | 0 | 0 | cbsa2023, data = dt)
     m_saiz_2_resid <- f_reg_resid(dt, "elasticity")
 
-    # BSH
     m_bsh_1 <- felm(d_index_sa ~ bsh | 0 | 0 | cbsa2023, data = dt)
     m_bsh_2 <- felm(d_index_sa ~ bsh + diffsharef + diffsharen + diffsharec + diffu + diffwage | 0 | 0 | cbsa2023, data = dt)
     m_bsh_2_resid <- f_reg_resid(dt, "bsh")
 
-    # LU-ML
     m_lu_1 <- felm(d_index_sa ~ lu_ml | 0 | 0 | cbsa2023, data = dt)
     m_lu_2 <- felm(d_index_sa ~ lu_ml + diffsharef + diffsharen + diffsharec + diffu + diffwage | 0 | 0 | cbsa2023, data = dt)
     m_lu_2_resid <- f_reg_resid(dt, "lu_ml")
@@ -88,7 +70,6 @@ est_stroebel_vavra_2019_models <- function(dt_lu_01_06, dt_lu_07_11, file_raw_01
     )
   }
 
-  # -- 3. Execute -- #
   res_01_06 <- run_period_models(dt_01_06)
   res_07_11 <- run_period_models(dt_07_11)
 
@@ -105,7 +86,6 @@ create_stroebel_vavra_2019_tex <- function(est_output, file_out) {
     utils[capture.output]
   )
 
-  # Helpers
   f_get_r2 <- function(mod) {
     glance(mod)$r.squared %>% sprintf("%0.2f", .)
   }
@@ -123,12 +103,11 @@ create_stroebel_vavra_2019_tex <- function(est_output, file_out) {
       models$lu_1, models$lu_2
     )
     
-    # Capture noise
     capture.output(stargazer(mod_list, type = "text"))
 
     stargazer(
       mod_list, type = "latex",
-      title = title,
+      title = r"(\textbf{First Stage House Price Regression as in \citet{StroebelVavra2019}})",
       label = "tab:stroebel_vavra_2019_regs",
       keep = c("elasticity|bsh|lu_ml"),
       keep.stat = c("n", "rsq")
@@ -195,7 +174,6 @@ extract_stroebel_vavra_2019_stats <- function(est_output) {
     stringsAsFactors = FALSE
   ) %>% setDT()
 
-  # Populate Stats
   dt_stats[, `:=`(
     num_obs = NA_integer_, 
     stage1_fstat = NA_real_, 
@@ -206,18 +184,15 @@ extract_stroebel_vavra_2019_stats <- function(est_output) {
     p_label <- paste0("p", dt_stats$time_period[i])
     mod_suffix <- paste0(dt_stats$rhs_var[i], "_", ifelse(dt_stats$controls[i], "2", "1"))
     
-    # Main Model
     mod <- est_output[[p_label]][[mod_suffix]]
     
     dt_stats[i, num_obs := glance(mod)$nobs]
     dt_stats[i, stage1_fstat := f_get_f(mod)]
     
     if (dt_stats$controls[i]) {
-      # Use Residual Model for Partial R2
       resid_mod <- est_output[[p_label]][[paste0(mod_suffix, "_resid")]]
       dt_stats[i, stage1_partial_r2 := glance(resid_mod)$r.squared]
     } else {
-      # Use Main Model R2 (since no controls)
       dt_stats[i, stage1_partial_r2 := glance(mod)$r.squared]
     }
   }
