@@ -10,7 +10,7 @@ replication_mian_sufi_2014_targets <- list(
     dt_ms_replication_full,
     f_prep_ms_replication_data(
       dt_ms = dt_mian_sufi_lu_ml, 
-      dt_bsh = dt_bsh_county_2010
+      dt_bsh = dt_bsh_cnty_2010
     )
   ),
 

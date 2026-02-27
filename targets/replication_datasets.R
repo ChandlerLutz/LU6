@@ -6,6 +6,20 @@ box::use(
 
 replication_data <- list(
 
+  ## Saiz (2010) -- 1999 MSAs
+  tar_target(
+    saiz_data_msa_shp_1999_file,
+    here::here("data-raw/shp/10-saiz1999msa_shapefile.rds"), 
+    format = "file"
+  ),
+  tar_target(
+    saiz_data_msa_shp_1999,
+    readRDS(saiz_data_msa_shp_1999_file) %>%
+      st_set_crs(4269) %>% st_transform(crs = 5070) %>% as.data.table() %>%
+      .[, GEOID := as.character(GEOID)],
+    format = "rds"
+  ), 
+
   ## Mian and Sufi (2014)
   tar_target(
     file_raw_mian_sufi_2014,

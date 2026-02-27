@@ -1,9 +1,12 @@
 
 
 box::use(
-  magrittr[`%>%`], sf[st_set_crs, st_transform],
+  magrittr[`%>%`], sf[st_set_crs, st_transform, st_simplify, st_cast],
   data.table[...]
 )
+
+ipums_key <- keyring::key_get("ipums_api_key")
+ipumsr::set_ipums_api_key(ipums_key, save = FALSE)
 
 shp_targets <- list(
   tar_target(nhgis_shp_metadata, f_get_nhgis_shp_metadata(), format = "parquet"),
@@ -21,6 +24,18 @@ shp_targets <- list(
       .[, GISJOIN := paste0("G", GEOID)], 
     format = "rds"
   ),
+  tar_target(shp_states,
+             CLmisc::get_rnhgis_shp("us_state_2023_tl2023") %>%
+               st_transform(crs = 5070) %>% st_simplify(dTolerance = 1e03) %>%
+               st_cast("MULTIPOLYGON") %>%
+               as.data.table(), 
+             format = "rds"),
+  tar_target(shp_census_divisions,
+             f_get_census_divisions_shp(
+               shp_states = shp_states,
+               file_path_census_regions_divisions = file_raw_census_st_regions_div
+             ), 
+             format = "rds"),
   tar_target(shp_zip5_2020,
              CLmisc::get_rnhgis_shp("us_zcta_2020_tl2020") %>%
                st_transform(crs = 5070) %>% 
@@ -39,18 +54,24 @@ shp_targets <- list(
   tar_target(shp_trct_2000,
              CLmisc::get_rnhgis_shp("us_tract_2000_tl2010") %>%
                st_transform(crs = 5070) %>%
-               as.data.table(),
+               as.data.table() %>% .[, GEOID := CTIDFP00],
              format = "rds"),
   tar_target(shp_trct_2010,
              CLmisc::get_rnhgis_shp("us_tract_2010_tl2020") %>%
                st_transform(crs = 5070) %>%
-               as.data.table(),
+               as.data.table() %>% .[, GEOID := GEOID10],
              format = "rds"),
   tar_target(shp_trct_2020,
              CLmisc::get_rnhgis_shp("us_tract_2020_tl2020") %>%
                st_transform(crs = 5070) %>%
                as.data.table(),
              format = "rds"),
+  tar_target(shp_blkgrp_2010,
+             CLmisc::get_rnhgis_shp("us_blck_grp_2010_tl2020") %>%
+               st_transform(crs = 5070) %>%
+               as.data.table() %>% .[, GEOID := GEOID10],
+             format = "rds"),
+    
   tar_target(
     file_raw_census_st_regions_div,
     here::here("data-raw/census/census_regions_divisions_states.csv"),
@@ -124,8 +145,42 @@ shp_targets <- list(
              f_cw_geo_to_cz20(cbsa_shp_2020, cz20_shp, id_col = "GEOID")),
   tar_target(cw_cbsa2022_cz2020,
              f_cw_geo_to_cz20(cbsa_shp_2022, cz20_shp, id_col = "GEOID")),
+  tar_target(cw_cbsa2023_cz2020,
+             f_cw_geo_to_cz20(cbsa_shp_2023, cz20_shp, id_col = "GEOID")),
   tar_target(cw_cnty2020_cz2020,
              f_cw_geo_to_cz20(cnty_shp_2020, cz20_shp, id_col = "GEOID")),
+
+  ## Crosswalks to States
+  tar_target(cw_zip3_2000_state, f_cw_geo_to_state(shp_zip3_2000, shp_states,
+                                                   id_col = "GEOID")),
+  tar_target(cw_zip5_2020_state, f_cw_geo_to_state(shp_zip5_2020, shp_states,
+                                                   id_col = "GEOID")),
+  tar_target(cw_trct_2020_state, f_cw_geo_to_state(shp_trct_2020, shp_states,
+                                                   id_col = "GEOID")),
+  tar_target(cw_cbsa_2020_state, f_cw_geo_to_state(cbsa_shp_2020, shp_states,
+                                                   id_col = "GEOID")),
+  tar_target(cw_cbsa_2022_state, f_cw_geo_to_state(cbsa_shp_2022, shp_states,
+                                                   id_col = "GEOID")),
+  tar_target(cw_cbsa_2023_state, f_cw_geo_to_state(cbsa_shp_2023, shp_states,
+                                                   id_col = "GEOID")),
+  tar_target(cw_cnty_2020_state, f_cw_geo_to_state(cnty_shp_2020, shp_states,
+                                                   id_col = "GEOID")),
+
+  ## Crosswalk to Census Divisions
+  tar_target(dt_division_zip3_2000,
+             f_cw_to_census_divisions(shp_zip3_2000, shp_census_divisions)),
+  tar_target(dt_division_zip5_2020, 
+             f_cw_to_census_divisions(shp_zip5_2020, shp_census_divisions)), 
+  tar_target(dt_division_trct_2020, 
+             f_cw_to_census_divisions(shp_trct_2020, shp_census_divisions)), 
+  tar_target(dt_division_cbsa_2020,
+             f_cw_to_census_divisions(cbsa_shp_2020, shp_census_divisions)), 
+  tar_target(dt_division_cbsa_2022,
+             f_cw_to_census_divisions(cbsa_shp_2023, shp_census_divisions)),
+  tar_target(dt_division_cbsa_2023,
+             f_cw_to_census_divisions(cbsa_shp_2023, shp_census_divisions)),
+  tar_target(dt_division_cnty_2020, 
+             f_cw_to_census_divisions(cnty_shp_2020, shp_census_divisions)),
 
   ## Tract to NHGIS tract crosswalk
   tar_target(
@@ -143,22 +198,6 @@ shp_targets <- list(
       shp_trct_2010 = shp_trct_2010,
       shp_trct_2020 = shp_trct_2020
     )
-  ),
-
-  tarchetypes::tar_map(
-    values = tibble::tibble(
-      year = c(1999, 2000, 2007, 2009, 2010, 2013:2023),
-      shp = rlang::syms(paste0("cbsa_shp_", c(1999, 2000, 2007, 2009, 2010, 2013:2023)))
-    ),
-    names = "year",
-        tar_target(
-          dt_division_cbsa,
-          f_get_cbsa_to_census_division_cw(
-            dt_cbsa = shp, 
-            census_regions_path = file_raw_census_st_regions_div
-          )
-        )
   )
-  
   
 )

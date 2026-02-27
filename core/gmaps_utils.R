@@ -92,18 +92,23 @@ f_get_regional_gmaps_amenity_demand <- function(dt_gmaps_amenity_demand, target_
   
   dt_regional_amenities <- dt_regional_amenities %>%
     .[, `:=`(
-          geog_level = geog_level,
-          geog_yr = geog_yr,
-          region_geog_level = "cbsa",
-          region_geog_yr = 2023
-      )] %>%
+      geog_level = geog_level,
+      geog_yr = geog_yr,
+      region_geog_level = "cbsa",
+      region_geog_yr = 2023
+    )] %>%
     setnames("GEOID", "region_geoid") %>%
-    setorder("target_gjoin")
+    setorder("target_gjoin") %>%
+    select_by_ref(c("target_gjoin", "target_geoid", "geog_level", "geog_yr", 
+                    "region_geog_level", "region_geoid", "region_geog_yr", 
+                    "demand_index_hiking", "demand_index_natural_amenity_recreation",
+                    "demand_index_other_viewpoints", "demand_index_water_amenity")) %>%
+    .[, gmaps_region_amenity_demand := rowMeans(.SD, na.rm = TRUE),
+      .SDcols = patterns("^demand_index")]
     
   cols_out <- c("target_gjoin", "target_geoid", "geog_level", "geog_yr", 
-                "region_geog_level", "region_geoid", "region_geog_yr", 
-                "demand_index_hiking", "demand_index_natural_amenity_recreation",
-                "demand_index_other_viewpoints", "demand_index_water_amenity")
+                "region_geog_level", "region_geoid", "region_geog_yr",
+                "gmaps_region_amenity_demand")
 
   dt_regional_amenities <- dt_regional_amenities %>%
     select_by_ref(cols_out) %>%

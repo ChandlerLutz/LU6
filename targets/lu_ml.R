@@ -4,7 +4,7 @@ box::use(
   data.table[...], magrittr[`%>%`], rlang[sym]
 )
 
-values_lu_ml_panel_inputs <- tibble::tribble(
+values_lu_ml_hp_panel_inputs <- tibble::tribble(
   ~name_suffix,  ~dt_hp_sym, ~dt_lu_file_sym, ~lu_id_col,
   ~dt_pci_sym, ~dt_gmaps_sym,
   ~dt_tract_cw_sym,
@@ -54,6 +54,26 @@ values_lu_ml_panel_inputs <- tibble::tribble(
   NULL
 )
 
+values_lu_ml_hu_panel_inputs <- tibble::tribble(
+  ~name_suffix,  ~dt_hu_sym, ~dt_lu_file_sym, 
+  ~dt_pci_sym, ~dt_gmaps_sym,
+
+  "cbsa_2020", sym("dt_hu_tst_cbsa_2020"), sym("file_raw_lu_cbsa_2020"), 
+  sym("bea_regional_pci_cbsa_2020"), sym("gmaps_region_amenity_demand_cbsa_2020"),
+
+  "cbsa_2022", sym("dt_hu_tst_cbsa_2022"), sym("file_raw_lu_cbsa_2022"), 
+  sym("bea_regional_pci_cbsa_2020"), sym("gmaps_region_amenity_demand_cbsa_2020"),
+
+  "cbsa_2023", sym("dt_hu_tst_cbsa_2023"), sym("file_raw_lu_cbsa_2023"), 
+  sym("bea_regional_pci_cbsa_2020"), sym("gmaps_region_amenity_demand_cbsa_2020"),
+
+  "cnty_2020", sym("dt_hu_tst_cnty_2020"), sym("file_raw_lu_cnty_2020"), 
+  sym("bea_regional_pci_county_2020"), sym("gmaps_region_amenity_demand_county_2020"),
+
+  "cnty_2023", sym("dt_hu_tst_cnty_2023"), sym("file_raw_lu_cnty_2023"), 
+  sym("bea_regional_pci_county_2023"), sym("gmaps_region_amenity_demand_county_2023")
+)
+
 
 f_get_lu_raw_file_loc <- function(file_loc) {
 
@@ -67,22 +87,6 @@ f_get_lu_raw_file_loc <- function(file_loc) {
 
 
 lu_ml_targets <- list(
-
-  ## The housing market cycles for panel analysis
-  tar_target(
-    housing_cycles_panel,
-    data.table(
-      cycle_start_yr = c(1970, 1980, 1990, 2000, 2008, 2013, 2020),
-      cycle_end_yr = c(1979, 1989, 1999, 2007, 2012, 2019, 2029),
-      cycle_label = c(
-        "1970s", "1980s", "1990s", "2000-2007", "2008-2012", "2013-2019", "2020s"
-      )
-    ) %>%
-      .[, let(cycle_start_date = as.Date(sprintf("%d-01-01", cycle_start_yr)),
-              cycle_end_date = as.Date(sprintf("%d-12-31", cycle_end_yr)))] %>%
-      setcolorder(c("cycle_start_yr", "cycle_start_date", "cycle_end_yr",
-                    "cycle_end_date"))
-    ), 
   
   ## LU-ML Raw Files
   tar_target(
@@ -121,6 +125,11 @@ lu_ml_targets <- list(
     format="file"
   ),
   tar_target(
+    file_raw_lu_cnty_2023,
+    f_get_lu_raw_file_loc("120-cnty-lu/cnty_shp_last_yr=2023/cnty_lu_2023.parquet"),
+    format="file"
+  ),
+  tar_target(
     file_raw_lu_zip5_2020, 
     f_get_lu_raw_file_loc("051-zip2020/zip2020_lu_all.parquet"),
     format="file"
@@ -137,23 +146,23 @@ lu_ml_targets <- list(
   ),
 
   tar_map(
-    values = values_lu_ml_panel_inputs,
+    values = values_lu_ml_hp_panel_inputs,
     names = "name_suffix", # Results in targets like: lu_ml_panel_fmcc_cbsa
 
     tar_target(
       lu_ml_panel,
       f_get_universal_lu_ml_panel(
-        dt_hp                   = dt_hp_sym,
+        dt_hm_data              = dt_hp_sym,
+        target_var              = "dlog_yoy_hp_local", 
         dt_regional_pci_panel   = dt_pci_sym,
         dt_gmaps_amenity_demand = dt_gmaps_sym,
-        dt_hm_cycles            = housing_cycles_panel,
+        dt_hm_cycles            = dt_housing_cycles_panel,
         
         # Handle the nested LU Prep function dynamically
         dt_lu = f_prep_lu_data(
           file_path    = dt_lu_file_sym, 
-          geog_id_col  = lu_id_col,
-          # Pass the crosswalk symbol (or NULL) explicitly
-          dt_tract_cw  = dt_tract_cw_sym
+          geog_id_col  = lu_id_col, 
+          dt_tract_cw = dt_tract_cw_sym
         )
       )
     )
@@ -178,7 +187,7 @@ lu_ml_targets <- list(
       dt_lu = f_prep_lu_data(file_raw_lu_cbsa_2015, geog_id_col = "GEOID"),
       dt_regional_pci_panel = bea_regional_pci_cbsa_2015,
       dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2015, 
-      dt_hm_cycles = housing_cycles_panel
+      dt_hm_cycles = dt_housing_cycles_panel
     )
   ),
 
@@ -190,7 +199,7 @@ lu_ml_targets <- list(
       dt_lu_base = f_prep_lu_data(file_raw_lu_cbsa_2009, geog_id_col = "GEOID"),
       dt_regional_pci_panel = bea_regional_pci_cbsa_2020,
       dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2020,
-      dt_hm_cycles = housing_cycles_panel
+      dt_hm_cycles = dt_housing_cycles_panel
     )
   ),
 
@@ -212,7 +221,31 @@ lu_ml_targets <- list(
       dt_regional_pci_panel = bea_regional_pci_cbsa_2023,
       dt_gmaps_amenity_demand = gmaps_region_amenity_demand_cbsa_2023
     )
+  ), 
+  
+  ## Housing unit decadal panel
+  tar_map(
+    values = values_lu_ml_hu_panel_inputs,
+    names = "name_suffix", # Results in targets like: lu_ml_hu_decadal_panel_cbsa_2020
+
+    tar_target(
+      lu_ml_hu_decadal_panel,
+      f_get_universal_lu_ml_panel(
+        dt_hm_data              = dt_hu_sym, 
+        target_var              = "dlog_hu", 
+        dt_regional_pci_panel   = dt_pci_sym,
+        dt_gmaps_amenity_demand = dt_gmaps_sym,
+        dt_hm_cycles            = dt_housing_cycles_decadal_panel,
+        
+        # Handle the nested LU Prep function dynamically
+        dt_lu = f_prep_lu_data(
+          file_path    = dt_lu_file_sym, 
+          geog_id_col  = "GEOID"
+        )
+      )
+    )
   )
 
 )
+
 

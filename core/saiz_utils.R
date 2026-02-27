@@ -6,16 +6,8 @@ f_validate_shp_for_saiz_cw <- function(shp, expected_geog, year) {
   }
   
   expected_cols <- switch(expected_geog,
-    "tract" = switch(as.character(year),
-                     "2000" = c("GISJOIN", "CTIDFP00"),
-                     "2010" = c("GISJOIN", "GEOID10"),
-                     "2020" = c("GISJOIN", "GEOID"),
-                     stop("Invalid year for tract. Use 2000, 2010, or 2020.")),
-    "zip" = switch(as.character(year),
-                   "2000" = "ZCTA5CE00",
-                   "2010" = "GEOID10",
-                   "2020" = "GEOID20",
-                   stop("Invalid year for zip. Use 2000, 2010, or 2020.")),
+    "tract" = "GEOID", 
+    "zip" = "GEOID", 
     "cbsa" = "GEOID",
     stop("Unknown geography level passed to validation.")
   )
@@ -35,12 +27,14 @@ f_validate_shp_for_saiz_cw <- function(shp, expected_geog, year) {
 }
 
 f_cw_saiz_to_tract <- function(dt_saiz, tract_shp, year) {
-  box::use(data.table[...], magrittr[`%>%`])
-  tract_shp <- f_validate_shp_for_saiz_cw(tract_shp, "tract", year)
-  id_in <- switch(as.character(year),
-                  "2000" = "CTIDFP00", "2010" = "GEOID10", "2020" = "GEOID")
   
-  dt_trct_shp <- tract_shp %>% as.data.table() %>% setnames(id_in, "census_tract") %>% .[, census_trct_yr := year]
+  box::use(data.table[...], magrittr[`%>%`], CLmisc[select_by_ref])
+  
+  tract_shp <- f_validate_shp_for_saiz_cw(tract_shp, "tract", year) %>%
+    select_by_ref(c("GISJOIN", "GEOID", "geometry"))
+    
+  dt_trct_shp <- tract_shp %>% as.data.table() %>% copy() %>% 
+    .[, census_trct_yr := year]
   
   dt_out <- sf::st_join(sf::st_as_sf(dt_trct_shp), 
                         sf::st_as_sf(dt_saiz[, .(GEOID_saiz = GEOID,
@@ -49,21 +43,21 @@ f_cw_saiz_to_tract <- function(dt_saiz, tract_shp, year) {
                         join = sf::intersects, left = FALSE, largest = TRUE) %>% 
     as.data.table() %>%
     .[, .(saiz_elasticity = mean(saiz_elasticity, na.rm = TRUE)),
-      keyby = .(GISJOIN, census_tract, census_trct_yr)]
+      keyby = .(GISJOIN, GEOID, census_trct_yr)] %>%
+    setcolorder(c("GISJOIN", "GEOID", "census_trct_yr", "saiz_elasticity")) %>%
+    setorder("GEOID")
   
-  dt_out[, GEOID := census_tract]
-  setcolorder(dt_out, "GEOID")
   return(dt_out)
 }
 
 f_cw_saiz_to_zip5 <- function(dt_saiz, zip_shp, year) {
-  box::use(data.table[...], magrittr[`%>%`])
-  zip_shp <- f_validate_shp_for_saiz_cw(zip_shp, "zip", year)
-  id_in <- switch(as.character(year),
-                  "2000" = "ZCTA5CE00", "2010" = "GEOID10", "2020" = "GEOID20")
   
-  dt_zip5_shp <- zip_shp %>% as.data.table() %>% setnames(id_in, "zip5") %>%
-    .[, zip5_yr := year]
+  box::use(data.table[...], magrittr[`%>%`], CLmisc[select_by_ref])
+  
+  zip_shp <- f_validate_shp_for_saiz_cw(zip_shp, "zip", year)
+    
+  dt_zip5_shp <- zip_shp %>% as.data.table() %>% copy() %>% 
+    select_by_ref(c("GISJOIN", "GEOID", "geometry"))
   
   dt_out <- sf::st_join(sf::st_as_sf(dt_zip5_shp),
                         sf::st_as_sf(dt_saiz[, .(GEOID_saiz = GEOID,
@@ -72,12 +66,70 @@ f_cw_saiz_to_zip5 <- function(dt_saiz, zip_shp, year) {
                         join = sf::intersects, left = FALSE, largest = TRUE) %>% 
     as.data.table() %>%
     .[, .(saiz_elasticity = mean(saiz_elasticity, na.rm = TRUE)),
-      keyby = .(zip5, zip5_yr)]
+      keyby = .(GISJOIN, GEOID)] %>%
+    .[, zip5_yr := year] %>%
+    setcolorder(c("GISJOIN", "GEOID", "zip5_yr", "saiz_elasticity")) %>%
+    setorder("GEOID")
   
-  dt_out[, GEOID := zip5]
-  setcolorder(dt_out, "GEOID")
+
   return(dt_out)
 }
+
+f_cw_saiz_to_county <- function(dt_saiz, dt_cnty_shp, year) {
+  
+  box::use(
+    data.table[...], magrittr[`%>%`], sf[st_as_sf, st_join, st_intersects]
+  )
+  
+  stopifnot(
+    all(c("GISJOIN", "GEOID", "geometry") %in% names(dt_cnty_shp)),
+    "elasticity" %in% names(dt_saiz)
+  )
+
+  dt_out <- sf::st_join(sf::st_as_sf(dt_cnty_shp),
+                        sf::st_as_sf(dt_saiz[, .(GEOID_saiz = GEOID,
+                                                 saiz_elasticity = elasticity,
+                                                 geometry)]),
+                        join = sf::intersects, left = FALSE, largest = TRUE) %>% 
+    as.data.table() %>%
+    .[, .(saiz_elasticity = mean(saiz_elasticity, na.rm = TRUE)),
+      keyby = .(GISJOIN, GEOID)]
+  
+  dt_out <- dt_out[, cnty_census_yr := year]
+  
+  setcolorder(dt_out, c("GEOID", "GISJOIN", "cnty_census_yr", "saiz_elasticity"))
+  
+  return(dt_out)
+}
+
+f_cw_saiz_to_zip3 <- function(dt_saiz, dt_zip3_shp, year) {
+  
+  box::use(
+    data.table[...], magrittr[`%>%`], sf[st_as_sf, st_join, st_intersects]
+  )
+  
+  stopifnot(
+    all(c("GISJOIN", "GEOID", "geometry") %in% names(dt_zip3_shp)),
+    "elasticity" %in% names(dt_saiz)
+  )
+
+  dt_out <- sf::st_join(sf::st_as_sf(dt_zip3_shp),
+                        sf::st_as_sf(dt_saiz[, .(GEOID_saiz = GEOID,
+                                                 saiz_elasticity = elasticity,
+                                                 geometry)]),
+                        join = sf::intersects, left = FALSE, largest = TRUE) %>% 
+    as.data.table() %>%
+    .[, .(saiz_elasticity = mean(saiz_elasticity, na.rm = TRUE)),
+      keyby = .(GISJOIN, GEOID)]
+  
+  dt_out <- dt_out[, zip3_census_yr := year]
+  
+  setcolorder(dt_out, c("GEOID", "GISJOIN", "zip3_census_yr", "saiz_elasticity"))
+  
+  return(dt_out)
+}
+
+
 
 f_cw_saiz_to_cbsa <- function(dt_saiz, cbsa_shp) {
   box::use(data.table[...], magrittr[`%>%`], CLmisc[select_by_ref])

@@ -1,0 +1,105 @@
+%% Root
+\documentclass[letter,12pt]{article}
+\usepackage{fullpage}  %To make the art22icle go to the full page
+\usepackage[letterpaper, hmargin=0.8in,top=0.62in,bottom=0.65in]{geometry} %To set the margins. hmargin is for the left and right margin and vmargin is for the top and bottom margin
+\usepackage{setspace}  %To use double spacing
+\usepackage{graphicx}  %To include graphics
+\usepackage{subfig}    %To place figures side-by-side
+\usepackage{multirow}  %To include multirow tables
+\usepackage{booktabs}  %To make professional looking tables
+\usepackage{siunitx}   %To align table columns by a decimal point
+\usepackage{rotating}  %To make sideways tables
+\usepackage{float}     %To float figures and tables
+\usepackage{amsmath}
+\usepackage[small,compact]{titlesec} %To reduce the size and space between sections
+\usepackage{verbatim} %To allow for verbatim text and multiline comments
+\usepackage{footmisc}  %This package allows us to label footnotes.
+\usepackage{caption}  %For a top and bottom caption or multiple captions
+\usepackage[toc,page]{appendix} %To offset appendices
+\usepackage{subfiles} %For including subfiles
+\usepackage{xspace} %For adding space after defining variables
+\usepackage{multirow} %For multiple rows in a table
+\usepackage{changepage} %To change the margins of the page on the fly,
+\usepackage{tabularx}
+\usepackage{amssymb} % For checkmarks 
+\usepackage[round]{natbib}
+\usepackage[colorlinks = true,
+            linkcolor = blue,
+            urlcolor  = blue,
+            citecolor = blue,
+            anchorcolor = blue]{hyperref} % from http://tex.stackexchange.com/a/61016/16412
+%%bold caption labels for figures and table
+\captionsetup[table]{labelfont=bf}
+\captionsetup[figure]{labelfont=bf}
+\usepackage{amsmath} %Helps with typesetting math
+\DeclareMathOperator*{\argmin}{\arg\!\min}
+
+\newenvironment{nospace}%
+{\noindent\ignorespaces}%
+{\par\noindent%
+\ignorespacesafterend}
+
+%%https://kawahara.ca/latex-how-to-programmatically-change-the-path-of-your-figures/
+%% Figure path 
+\def \FigPath {../output-plots}
+%% Table path 
+\def \TexTablePath {../output-tex}
+
+
+\begin{document}
+%\renewcommand{\harvardurl}{URL: \url}	%Necessary to use the harvard package
+\title{Highly Disaggregated Land Unavailability}
+
+%The thanks puts the school and email in a footnote
+\author{Chandler Lutz \\ University of North Carolina, Charlotte \\ \\ Ben Sand \\ York University \\ \\ \\ Land Unavailability Data: \\ \url{https://github.com/ChandlerLutz/LandUnavailabilityData} \\ \\
+} \date{\today}
+
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+Standard empirical proxies contradict the canonical prediction that supply constraints amplify house price cycles. We resolve this puzzle by constructing the Land Unavailability--Machine Learning (LU-ML) Indices using high-resolution satellite imagery. Unlike existing measures, our indices capture the nonlinear and heterogeneous impacts of physical geography. We document two main facts: (1) physical constraints are a key determinant of cross-sectional price dynamics, driven largely by the intensive margin (steep slopes); and (2) looser supply constraints significantly mitigate the price effects of demand growth, overturning the ``null result'' in recent literature. 
+\end{abstract}
+
+%Double space the document
+\doublespace
+%\onehalfspacing
+
+
+\emph{JEL Classification: R30, R31, R20};
+
+\emph{Keywords: Land Unavailability, Supply Constraints, House Prices, Entrepreneurship}
+
+%Set the above display skip to zero so there is no extra space above an equation -- only for double space
+\setlength\abovedisplayskip{2pt}
+
+%Set the below display skip to zero so there is not extra space below equations -- only for double space
+\setlength\belowdisplayskip{2pt}
+
+\clearpage
+\setcounter{page}{1}
+
+\input{lu_main.tex}
+
+\clearpage
+%Insert the bibliography
+\begin{singlespace}
+%\setlength{\bibsep}{0pt plus 0.5ex}
+\bibliographystyle{abbrvnat}
+\bibliography{00-lu,00-lu_data,00-lu_news_articles}
+\end{singlespace}
+
+%Add the appendix
+\clearpage
+\begin{appendix}
+  
+%Add the figures
+\clearpage
+\input{lu_tables_figures.tex}
+
+\clearpage
+\input{lu_appendix.tex}
+
+\end{appendix}
+
+\end{document}

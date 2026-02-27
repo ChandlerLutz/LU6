@@ -8,15 +8,13 @@ hp_indices_targets <- list(
     format = "file"
   ),
   tar_target(
-    fmcc_natl_hp, f_get_fmcc_natl_hp(file_path_fmcc = file_raw_fmcc_hp),
-    format = "parquet"
+    fmcc_natl_hp, f_get_fmcc_natl_hp(file_path_fmcc = file_raw_fmcc_hp)
   ),
   tar_target(
     fmcc_cbsa_hp,
     f_get_fmcc_cbsa_hp(
       file_path_fmcc = file_raw_fmcc_hp, dt_cz20 = cz20_shp, dt_cbsa_shp = cbsa_shp_2022
-    ),
-    format = "parquet"
+    )
   ), 
 
   ## FHFA Annual HPI
@@ -47,7 +45,6 @@ hp_indices_targets <- list(
   tar_target(fhfa_annual_hp_cbsa, 
              f_get_fhfa_annual_hpi("cbsa", file_raw_fhfa_annual_cbsa,
                                    cw_cbsa2020_cz2020)),
-  
   tar_target(fhfa_annual_hp_cnty, 
              f_get_fhfa_annual_hpi("county", file_raw_fhfa_annual_cnty,
                                    cw_cnty2020_cz2020)),

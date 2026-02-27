@@ -82,8 +82,8 @@ f_get_fmcc_natl_hp <- function(file_path_fmcc) {
     .[, dlog_yoy_fmcc_us_hp_sa := log(fmcc_us_hp_sa) - shift(log(fmcc_us_hp_sa),
                                                              n = 12)] %>%
     .[, GEOID := "US"] %>%
-    .[, hp_local := fmcc_us_hp_sa] %>%
-    .[, dlog_yoy_hp_local := dlog_yoy_fmcc_us_hp_sa] %>%
+    .[, hp_natl := fmcc_us_hp_sa] %>%
+    .[, dlog_yoy_hp_natl := log(hp_natl) - shift(log(hp_natl), n = 12)] %>% 
     setcolorder("GEOID", "index")
 
   return(dt)
@@ -203,8 +203,8 @@ f_get_fhfa_annual_hpi <- function(geog_level, file_path_raw, dt_to_cz20_cw = NUL
       .[order(year)] %>% 
       .[, dlog_yoy_fhfa_natl_hpi := log(fhfa_natl_hpi) - log(shift(fhfa_natl_hpi, 1))] %>%
       .[, GEOID := "US"] %>%
-      .[, hp_local := fhfa_natl_hpi] %>%
-      .[, dlog_yoy_hp_local := dlog_yoy_fhfa_natl_hpi]
+      .[, hp_natl := fhfa_natl_hpi] %>%
+      .[, dlog_yoy_hp_natl := dlog_yoy_fhfa_natl_hpi]
   }
 
   dt[, index := as.Date(paste0(year, "-01-01"))]
@@ -261,8 +261,8 @@ f_get_fhfa_qtrly_at_hpi <- function(geog_level, file_path_raw, dt_to_cz20_cw = N
       .[, dlog_yoy_fhfa_natl_hpi := log(fhfa_natl_hpi) - shift(log(fhfa_natl_hpi),
                                                                n = 4)] %>%
       .[, GEOID := "US"] %>%
-      .[, hp_local := fhfa_natl_hpi] %>%
-      .[, dlog_yoy_hp_local := dlog_yoy_fhfa_natl_hpi]
+      .[, hp_natl := fhfa_natl_hpi] %>%
+      .[, dlog_yoy_hp_natl := dlog_yoy_fhfa_natl_hpi]
   }
 
   dt <- setcolorder(dt, c("GEOID", "index"))

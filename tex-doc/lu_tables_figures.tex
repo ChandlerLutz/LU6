@@ -1,0 +1,16 @@
+%% figures
+
+\thispagestyle{empty}
+
+\begin{figure}[h!]
+\centering
+\caption{\textbf{The Natural Amenity Premium in US Housing Markets, 1976--2024}}
+\label{fig:gmaps_amenities_hp_regs}
+
+\centerline{\includegraphics[scale=1]{\FigPath /gmaps_amenity_hp_regs}}
+\caption*{\footnotesize{\textit{Notes:} Regressions of the year-over-year (YoY) log change in CBSA house prices on Google Maps Natural Amenity Demand across housing market cycles and for the full sample by house price dataset. The CBSA-level Google Maps Natural Amenity Demand Index is the sum of the log Google Maps Amenity Demand Indices for ``Hiking,'' ``Natural Amenity Recreation,'' ``Water Amenities,'' and ``Viewpoints.'' See \citet{Lutz2025amenities} for further computational details. We regress the log annual change in house prices for CBSA $i$ on the interaction Google Amenity Demand Index with housing market cycle $c$ using: $\Delta \ln(P_{i,t}) = \alpha_t + \beta_c (\text{Amenity}_i \times \text{Cycle}_{t,c}) +\varepsilon_{i,t}$, where $\alpha_t$ signifies time fixed effects and $\text{Cycle}_{t,c}$ is an indicator equal to 1 if period $t$ falls in cycle $c$ (and 0 otherwise). Housing market cycles span the 1970s, 1980s, 1990s, 2000--2007, 2008--2012, 2013--2019, and the 2020s. The far-right coefficients show the estimates for the full sample using the equation:  $\Delta \ln(P_{i,t}) = \alpha_t + \beta \text{Amenity}_i + \varepsilon_{i,t}$. Plotted coefficients are scaled by 100 and can be interpreted as annual percent changes in house prices per one standard deviation increase in Natural Amenity Demand. Confidence intervals are computed using $\pm 2$ robust standard errors clustered by CBSA.}}
+
+\end{figure}
+
+\clearpage
+

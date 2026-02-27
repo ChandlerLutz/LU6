@@ -13,17 +13,18 @@ f_crosswalk_baum_snow_han <- function(dt_bsh, dt_cw, geog_level) {
   if (geog_level == "tract2020") {
     
     dt_cw_clean <- copy(dt_cw) %>%
-      select_by_ref(c("from_census_tract", "to_census_tract", "housing_units_2000")) %>%
+      select_by_ref(c("from_census_tract", "to_gjoin", "to_census_tract",
+                      "housing_units_2000")) %>%
       setnames("from_census_tract", "ctracts2000") %>%
-      setnames("to_census_tract", "ctracts2020") %>%
+      setnames("to_census_tract", "GEOID") %>%
+      setnames("to_gjoin", "GISJOIN") %>%
       setnames("housing_units_2000", "hu_trct00")
     
     dt_out <- merge(dt_cw_clean, dt_bsh_clean, by = "ctracts2000") %>%
-      .[, afact := hu_trct00 / sum(hu_trct00), by = ctracts2020] %>%
+      .[, afact := hu_trct00 / sum(hu_trct00), by = .(GISJOIN, GEOID)] %>%
       .[, .(gamma01b_space_FMM = sum(gamma01b_space_FMM * afact)),
-        keyby = ctracts2020] %>%
-      .[!is.na(ctracts2020)] %>%
-      setnames("ctracts2020", "GEOID")
+        keyby = .(GISJOIN, GEOID)] %>%
+      .[!is.na(GISJOIN)]
     
     if (anyDuplicated(dt_out$GEOID)) stop("Duplicate Tracts found in BSH Crosswalk")
     
@@ -107,8 +108,8 @@ f_aggregate_baum_snow_han <- function(dt_bsh, dt_shp, dt_trct_hu, sf_trct_shp,
   dt_bsh_aggregated_out <- sf::st_join(
     x = sf_trct_clean,
     y = sf::st_as_sf(dt_shp_clean),
-    join = sf::st_covered_by,
-    left = FALSE
+    join = sf::st_intersects,
+    left = FALSE, largest = TRUE
   ) %>%
     as.data.table() %>%
     .[, geometry := NULL] %>%

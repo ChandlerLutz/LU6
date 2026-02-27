@@ -22,17 +22,15 @@ f_prep_data_for_stage1_panel <- function(dt_lu_ml_panel, dt_natl_hp, dt_mtg,
     all(c("GEOID", "saiz_elasticity") %chin% names(dt_saiz)),
     
     is.data.table(dt_bsh),
-    all(c("GEOID_metro", "gamma01b_space_FMM") %chin% names(dt_bsh)),
+    all(c("GEOID", "gamma01b_space_FMM") %chin% names(dt_bsh)),
     
     is.data.table(dt_div),
-    all(c("geoid_cbsa_2023", "st_first", "census_region", "census_division") %chin%
+    all(c("GEOID", "census_division") %chin%
           names(dt_div))
   )
   
   dt_div_clean <- copy(dt_div) %>%
-    select_by_ref(c("geoid_cbsa_2023", "st_first", "census_region", 
-                    "census_division")) %>%
-    setnames("geoid_cbsa_2023", "cbsa")
+    select_by_ref(c("GEOID", "census_division"))
   
   dt_natl_clean <- copy(dt_natl_hp) %>%
     select_by_ref(c("index", "hp_natl", "dlog_yoy_hp_natl"))
@@ -41,13 +39,13 @@ f_prep_data_for_stage1_panel <- function(dt_lu_ml_panel, dt_natl_hp, dt_mtg,
     select_by_ref(c("index", "real_mtg_rate", "d_yoy_real_mtg_rate"))
   
   dt_bsh_clean <- copy(dt_bsh) %>%
-    .[, .(GEOID = GEOID_metro, gamma01b_space_FMM)]
+    select_by_ref(c("GEOID", "gamma01b_space_FMM"))
   
   dt_saiz_clean <- copy(dt_saiz) %>%
-    .[, .(GEOID = GEOID, saiz_elasticity)]
+    select_by_ref(c("GEOID", "saiz_elasticity"))
   
   dt_out <- copy(dt_lu_ml_panel) %>%
-    merge(dt_div_clean, by.x = "GEOID", by.y = "cbsa", all.x = TRUE) %>%
+    merge(dt_div_clean, by = "GEOID", all.x = TRUE) %>%
     merge(dt_natl_clean, by = "index", all.x = TRUE) %>%
     merge(dt_mtg_clean, by = "index", all.x = TRUE) %>%
     merge(dt_saiz_clean, by = "GEOID", all.x = TRUE) %>%
@@ -64,7 +62,7 @@ f_prep_data_for_stage1_panel <- function(dt_lu_ml_panel, dt_natl_hp, dt_mtg,
   
   setorder(dt_out, GEOID, index)
   
-  cols_to_keep <- c("GEOID", "cz20", "st_first", "census_region", "census_division",
+  cols_to_keep <- c("GEOID", "cz20", "census_division",
                     "index", "division_idx", "hp.target", "lu_ml_xgboost", 
                     "saiz_hp", "saiz_mtg_rate", 
                     "bsh_hp", "bsh_mtg_rate")

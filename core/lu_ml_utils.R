@@ -109,7 +109,8 @@ f_prep_lu_data <- function(file_path_lu, geog_id_col = "GEOID", dt_tract_cw = NU
   return(dt_lu)
 }
 
-f_get_universal_lu_ml_panel <- function(dt_hp, dt_lu, dt_regional_pci_panel,
+f_get_universal_lu_ml_panel <- function(dt_hm_data, target_var,
+                                        dt_lu, dt_regional_pci_panel,
                                         dt_gmaps_amenity_demand, dt_hm_cycles) {
   
   box::use(
@@ -117,11 +118,19 @@ f_get_universal_lu_ml_panel <- function(dt_hp, dt_lu, dt_regional_pci_panel,
     fixest[feols, xpd]
   )
 
-  gmaps_amenity_demand_cols <- names(dt_gmaps_amenity_demand) %>%
-    .[grepl("demand_index", .) & !grepl("nature", ., ignore.case = TRUE)]
+  stopifnot(
+    is.data.table(dt_hm_data), 
+    is.character(target_var), length(target_var) == 1,
+    c("GEOID", "index", target_var) %chin% names(dt_hm_data),
+    is.data.table(dt_lu),
+    is.data.table(dt_regional_pci_panel),
+    is.data.table(dt_gmaps_amenity_demand),
+    is.data.table(dt_hm_cycles),
+    c("cycle_start_date", "cycle_end_date", "cycle_label") %chin%names(dt_hm_cycles)
+  )
 
   dt_gmaps_amenity_demand <- copy(dt_gmaps_amenity_demand) %>%
-    select_by_ref(c("target_geoid", gmaps_amenity_demand_cols)) %>%
+    select_by_ref(c("target_geoid", "gmaps_region_amenity_demand")) %>%
     setnames("target_geoid", "GEOID")
 
   dt_pci <- copy(dt_regional_pci_panel) %>%
@@ -131,11 +140,12 @@ f_get_universal_lu_ml_panel <- function(dt_hp, dt_lu, dt_regional_pci_panel,
     .[, dlog_yoy_regional_pci := log(regional_pci) - shift(log(regional_pci)),
       by = GEOID]
 
-  dt_est_data <- copy(dt_hp) %>%
+  dt_est_data <- copy(dt_hm_data) %>%
+    setnames(target_var, "target_var") %>% 
     .[, year := as.integer(year(index))] %>%
     merge(dt_pci[, .(GEOID, year, dlog_yoy_regional_pci)], by = c("GEOID", "year"),
           all.x = TRUE) %>%
-    .[!is.na(dlog_yoy_hp_local) & !is.na(dlog_yoy_regional_pci)]
+    .[!is.na(target_var) & !is.na(dlog_yoy_regional_pci)]
 
   dt_est_data[dt_hm_cycles, 
               on = .(index >= cycle_start_date, index <= cycle_end_date), 
@@ -149,20 +159,17 @@ f_get_universal_lu_ml_panel <- function(dt_hp, dt_lu, dt_regional_pci_panel,
 
   dt_est_data <- dt_est_data[!is.na(hm_cycle)] %>%
     merge(dt_gmaps_amenity_demand, by = "GEOID", all.x = TRUE) %>%
-    na.omit(cols = c("dlog_yoy_hp_local", "dlog_yoy_regional_pci", 
-                     "hm_cycle", gmaps_amenity_demand_cols))
+    na.omit(cols = c("target_var", "dlog_yoy_regional_pci", 
+                     "hm_cycle", "gmaps_region_amenity_demand"))
   
-  dt_est_data[, index_char := as.character(index)]
+  dt_est_data <- dt_est_data[, index_char := as.character(index)]
 
-  interaction_terms <- paste0(gmaps_amenity_demand_cols, ":hm_cycle")
-
-  f_formula <- xpd(dlog_yoy_hp_local ~ dlog_yoy_regional_pci:hm_cycle +
-                     ..interactions | index_char,
-                   ..interactions = interaction_terms)
+  f_formula <- xpd(target_var ~ dlog_yoy_regional_pci:hm_cycle
+                   + gmaps_region_amenity_demand:hm_cycle | index_char)
 
   first_stage_model <- feols(f_formula, data = dt_est_data)
 
-  dt_est_data[, hp.target := residuals(first_stage_model)]
+  dt_est_data <- dt_est_data[, hp.target := residuals(first_stage_model)]
 
   dt_input <- dt_est_data[, .(GEOID, index, hp.target)]
 
@@ -170,10 +177,82 @@ f_get_universal_lu_ml_panel <- function(dt_hp, dt_lu, dt_regional_pci_panel,
     select_by_ref(c("GEOID", "index", "lu_ml_xgboost"))
 
   dt_out <- merge(dt_est_data, dt_lu_ml, by = c("GEOID", "index"), all.x = TRUE) %>%
-    .[, index_char := NULL] 
+    .[, index_char := NULL] %>%
+    setnames("target_var", target_var)
 
   return(dt_out)
 }
+
+f_get_universal_lu_ml_long_diff <- function(dt_hm_data, target_var,
+                                            dt_lu, dt_regional_pci_panel,
+                                            dt_gmaps_amenity_demand,
+                                            year_start, year_end) {
+  
+  box::use(
+    data.table[...], magrittr[`%>%`], CLmisc[select_by_ref],
+    fixest[feols, xpd]
+  )
+
+  stopifnot(is.data.table(dt_hm_data), 
+            is.character(target_var), length(target_var) == 1,
+            c("GEOID", "index", target_var) %chin% names(dt_hm_data),
+            is.data.table(dt_lu),
+            is.data.table(dt_regional_pci_panel),
+            is.data.table(dt_gmaps_amenity_demand)
+            )
+
+  dt_gmaps_amenity_demand <- copy(dt_gmaps_amenity_demand) %>%
+    select_by_ref(c("target_geoid", "gmaps_region_amenity_demand")) %>%
+    setnames("target_geoid", "GEOID")
+
+  dt_pci <- copy(dt_regional_pci_panel) %>%
+    setnames("target_geoid", "GEOID", skip_absent = TRUE) %>%
+    .[, year := as.integer(year)] %>%
+    .[year %in% c(year_start, year_end)] %>%
+    setorder(GEOID, year) %>%
+    .[, .(dlog_yoy_regional_pci = log(regional_pci[2]) - log(regional_pci[1])),
+      by = GEOID]
+
+  dt_est_data <- copy(dt_hm_data) %>%
+    setnames(target_var, "target_var") %>% 
+    .[, year := as.integer(year(index))] %>%
+    .[year %in% c(year_start, year_end)] %>%
+    .[order(GEOID, year)] %>%
+    .[, .SD[.N], by = .(GEOID, year)] %>%
+    .[, .(dlog_target_var = log(target_var[2]) - log((target_var[1]))),
+      by = .(cz20, GEOID)] %>%
+    .[, index := as.Date(paste0(year_start, "-01-01"))] %>%
+    merge(dt_pci[, .(GEOID, dlog_yoy_regional_pci)], by = "GEOID", all.x = TRUE) %>%
+    .[!is.na(target_var) & !is.na(dlog_yoy_regional_pci)] %>%
+    merge(dt_gmaps_amenity_demand, by = "GEOID", all.x = TRUE) %>%
+    na.omit(cols = c("dlog_target_var", "dlog_yoy_regional_pci",
+                     "gmaps_region_amenity_demand"))
+      
+  f_formula <- xpd(
+    dlog_target_var ~ dlog_yoy_regional_pci + gmaps_region_amenity_demand
+  )
+
+  first_stage_model <- feols(f_formula, data = dt_est_data)
+
+  dt_est_data <- dt_est_data[, hp.target := residuals(first_stage_model)]
+
+  dt_input <- dt_est_data[, .(GEOID, index, hp.target)]
+
+  dt_lu_ml <- f_run_lu_ml(dt_input, dt_lu, run_in_parallel = FALSE) %>%
+    select_by_ref(c("GEOID", "index", "lu_ml_xgboost"))
+
+  dt_out <- merge(dt_est_data, dt_lu_ml, by = c("GEOID", "index"), all.x = TRUE) %>%
+    setnames("dlog_target_var", paste0("dlog_", target_var)) %>%
+    setcolorder(c("GEOID", "cz20"))
+
+  return(dt_out)
+}
+
+  
+
+
+
+
 
 
 f_get_mian_sufi_lu_ml <- function(file_path_ms, dt_lu, dt_regional_pci_panel, 
@@ -184,11 +263,8 @@ f_get_mian_sufi_lu_ml <- function(file_path_ms, dt_lu, dt_regional_pci_panel,
     fixest[feols, xpd]
   )
   
-  gmaps_amenity_demand_cols <- names(dt_gmaps_amenity_demand) %>%
-    .[grepl("demand_index", .) & !grepl("nature", ., ignore.case = TRUE)]
-  
   dt_gmaps_amenity_demand <- copy(dt_gmaps_amenity_demand) %>%
-    select_by_ref(c("target_geoid", gmaps_amenity_demand_cols)) %>%
+    select_by_ref(c("target_geoid", "gmaps_region_amenity_demand")) %>%
     setnames("target_geoid", "fips")
   
   dt_ms <- readRDS(file_path_ms) %>%
@@ -208,10 +284,10 @@ f_get_mian_sufi_lu_ml <- function(file_path_ms, dt_lu, dt_regional_pci_panel,
   dt_est_data <- merge(dt_ms, dt_pci, by = "fips", all.x = TRUE) %>%
     .[!is.na(house.net.worth) & !is.na(dlog_pci_06_09)] %>%
     merge(dt_gmaps_amenity_demand, by = "fips") %>%
-    na.omit(cols = c("house.net.worth", "dlog_pci_06_09", gmaps_amenity_demand_cols))
+    na.omit(cols = c("house.net.worth", "dlog_pci_06_09",
+                     "gmaps_region_amenity_demand"))
   
-  f_formula <- xpd(house.net.worth ~ dlog_pci_06_09 + ..amenity_cols,
-                   ..amenity_cols = gmaps_amenity_demand_cols)
+  f_formula <- xpd(house.net.worth ~ dlog_pci_06_09 + gmaps_region_amenity_demand)
   
   first_stage_model <- feols(f_formula, data = dt_est_data)
   
@@ -242,11 +318,8 @@ f_get_guren_et_al_lu_ml <- function(file_path_guren, dt_lu,
     fst[read_fst], fixest[feols, xpd]
   )
 
-  gmaps_amenity_demand_cols <- names(dt_gmaps_amenity_demand) %>%
-    .[grepl("demand_index", .) & !grepl("nature", ., ignore.case = TRUE)]
-
   dt_gmaps_amenity_demand <- copy(dt_gmaps_amenity_demand) %>%
-    select_by_ref(c("target_geoid", gmaps_amenity_demand_cols)) %>%
+    select_by_ref(c("target_geoid", "gmaps_region_amenity_demand")) %>%
     setnames("target_geoid", "cbsa") %>%
     .[, cbsa := as.character(cbsa)]
 
@@ -276,15 +349,13 @@ f_get_guren_et_al_lu_ml <- function(file_path_guren, dt_lu,
 
   dt_est <- merge(dt_est, dt_gmaps_amenity_demand, by = "cbsa", all.x = TRUE) %>%
     na.omit(cols = c("lhpi_a", "dlog_yoy_regional_pci", "hm_cycle",
-                     gmaps_amenity_demand_cols))
+                     "gmaps_region_amenity_demand"))
 
-  dt_est[, index_char := as.character(index)]
+  dt_est <- dt_est[, index_char := as.character(index)]
 
-  interaction_terms <- paste0(gmaps_amenity_demand_cols, ":hm_cycle")
 
   f_formula <- xpd(lhpi_a ~ dlog_yoy_regional_pci:hm_cycle +
-                     ..interactions | index_char,
-                   ..interactions = interaction_terms)
+                     gmaps_region_amenity_demand:hm_cycle | index_char)
 
   first_stage_model <- feols(f_formula, data = dt_est)
 
@@ -318,11 +389,9 @@ f_get_chaney_et_al_lu_ml <- function(file_path_chaneyetal, dt_lu_base,
     nanoparquet[read_parquet], fixest[feols, xpd]
   )
 
-  gmaps_amenity_demand_cols <- names(dt_gmaps_amenity_demand) %>%
-    .[grepl("demand_index", .) & !grepl("nature", ., ignore.case = TRUE)]
 
   dt_gmaps_amenity_demand <- copy(dt_gmaps_amenity_demand) %>%
-    select_by_ref(c("target_geoid", gmaps_amenity_demand_cols)) %>%
+    select_by_ref(c("target_geoid", "gmaps_region_amenity_demand")) %>%
     setnames("target_geoid", "msacode") %>%
     .[, msacode := as.character(msacode)]
 
@@ -348,15 +417,12 @@ f_get_chaney_et_al_lu_ml <- function(file_path_chaneyetal, dt_lu_base,
 
   dt_est <- merge(dt_est, dt_gmaps_amenity_demand, by = "msacode", all.x = TRUE) %>%
     na.omit(cols = c("index_normalized", "log_regional_pci", "hm_cycle",
-                     gmaps_amenity_demand_cols))
+                     "gmaps_region_amenity_demand"))
 
-  dt_est[, index_char := as.character(year)]
-
-  interaction_terms <- paste0(gmaps_amenity_demand_cols, ":hm_cycle")
+  dt_est <- dt_est[, index_char := as.character(year)]
 
   f_formula <- xpd(index_normalized ~ log_regional_pci:hm_cycle +
-                     ..interactions | index_char,
-                   ..interactions = interaction_terms)
+                      gmaps_region_amenity_demand:hm_cycle | index_char)
 
   first_stage_model <- feols(f_formula, data = dt_est)
 
@@ -395,11 +461,8 @@ f_get_stroebel_vavra_01_06_lu_ml <- function(file_path_hp, dt_lu,
     nanoparquet[read_parquet], fixest[feols, xpd]
   )
 
-  gmaps_amenity_demand_cols <- names(dt_gmaps_amenity_demand) %>%
-    .[grepl("demand_index", .)]
-
   dt_gmaps_amenity_demand <- copy(dt_gmaps_amenity_demand) %>%
-    select_by_ref(c("target_geoid", gmaps_amenity_demand_cols)) %>%
+    select_by_ref(c("target_geoid", "gmaps_region_amenity_demand")) %>%
     setnames("target_geoid", "cbsa")
 
   dt_pci <- copy(dt_regional_pci_panel) %>%
@@ -420,10 +483,9 @@ f_get_stroebel_vavra_01_06_lu_ml <- function(file_path_hp, dt_lu,
   dt_est <- merge(dt_est, dt_pci, by = "cbsa") %>%
     .[!is.na(d_index_sa) & !is.na(dlog_pci_01_06)] %>%
     merge(dt_gmaps_amenity_demand, by = "cbsa") %>%
-    na.omit(cols = c("d_index_sa", "dlog_pci_01_06", gmaps_amenity_demand_cols))
+    na.omit(cols = c("d_index_sa", "dlog_pci_01_06", "gmaps_region_amenity_demand"))
 
-  f_formula <- xpd(d_index_sa ~ dlog_pci_01_06 + ..amenity_cols,
-                   ..amenity_cols = gmaps_amenity_demand_cols)
+  f_formula <- xpd(d_index_sa ~ dlog_pci_01_06 + gmaps_region_amenity_demand)
 
   first_stage_model <- feols(f_formula, data = dt_est)
 
@@ -456,11 +518,8 @@ f_get_stroebel_vavra_07_11_lu_ml <- function(file_path_hp, dt_lu,
     nanoparquet[read_parquet], fixest[feols, xpd]
   )
 
-  gmaps_amenity_demand_cols <- names(dt_gmaps_amenity_demand) %>%
-    .[grepl("demand_index", .)]
-
   dt_gmaps_amenity_demand <- copy(dt_gmaps_amenity_demand) %>%
-    select_by_ref(c("target_geoid", gmaps_amenity_demand_cols)) %>%
+    select_by_ref(c("target_geoid", "gmaps_region_amenity_demand")) %>%
     setnames("target_geoid", "cbsa")
 
   dt_pci <- copy(dt_regional_pci_panel) %>%
@@ -481,10 +540,9 @@ f_get_stroebel_vavra_07_11_lu_ml <- function(file_path_hp, dt_lu,
   dt_est <- merge(dt_est, dt_pci, by = "cbsa") %>%
     .[!is.na(d_index_sa) & !is.na(dlog_pci_07_11)] %>%
     merge(dt_gmaps_amenity_demand, by = "cbsa") %>%
-    na.omit(cols = c("d_index_sa", "dlog_pci_07_11", gmaps_amenity_demand_cols))
+    na.omit(cols = c("d_index_sa", "dlog_pci_07_11", "gmaps_region_amenity_demand"))
 
-  f_formula <- xpd(d_index_sa ~ dlog_pci_07_11 + ..amenity_cols,
-                   ..amenity_cols = gmaps_amenity_demand_cols)
+  f_formula <- xpd(d_index_sa ~ dlog_pci_07_11 + gmaps_region_amenity_demand)
 
   first_stage_model <- feols(f_formula, data = dt_est)
 

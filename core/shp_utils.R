@@ -213,6 +213,46 @@ f_cw_geo_to_cz20 <- function(dt_geo_shp, dt_cz20_shp, id_col) {
   return(dt_out)
 }
 
+f_cw_geo_to_state <- function(dt_geo_shp, dt_shp_st, id_col) {
+
+  box::use(
+    data.table[...], magrittr[`%>%`], CLmisc[select_by_ref],
+    sf[st_transform, st_join, st_as_sf]
+  )
+
+  dt_geo <- dt_geo_shp %>%
+    as.data.table() %>% copy()
+
+  if (id_col %notin% names(dt_geo)) {
+    stop(sprintf("Column '%s' not found in shapefile.", id_col))
+  }
+
+  setnames(dt_geo, id_col, "GEOID")
+  
+  dt_geo <- dt_geo %>%
+    select_by_ref(c("GEOID", "geometry")) %>% 
+    .[, geometry := st_transform(geometry, crs = 5070)] %>%
+    st_as_sf()
+
+  dt_st <- dt_shp_st %>%
+    as.data.table() %>% copy() %>%
+    select_by_ref(c("STUSPS", "geometry")) %>%
+    .[, geometry := st_transform(geometry, crs = 5070)] %>%
+    st_as_sf()
+
+  dt_out <- st_join(dt_geo, dt_st, largest = TRUE, left = TRUE) %>%
+    as.data.table() %>%
+    select_by_ref(c("GEOID", "STUSPS"))
+
+  if (nrow(dt_out[duplicated(GEOID)]) > 0) {
+    stop("Duplicate IDs found in GEOID after join")
+  }
+
+  return(dt_out)
+
+}
+
+
 f_get_tract_to_nhgis_tract_cw <- function(dt_nhgis_cw_raw, 
                                           shp_trct_1980,
                                           shp_trct_1990,
@@ -288,48 +328,65 @@ f_get_tract_to_nhgis_tract_cw <- function(dt_nhgis_cw_raw,
   return(dt_out)
 }
 
-f_get_cbsa_to_census_division_cw <- function(dt_cbsa, census_regions_path) {
+
+f_get_census_divisions_shp <- function(shp_states, file_path_census_regions_divisions) {
   
   box::use(
-    data.table[...], magrittr[`%>%`], CLmisc[select_by_ref]
+    data.table[...], magrittr[`%>%`],
+    sf[st_as_sf, st_cast, st_simplify, st_transform, st_make_valid, st_union],
+    dplyr[group_by, summarize, ungroup], CLmisc[select_by_ref]
   )
+
+  stopifnot(is.data.table(shp_states))
+
+  shp_states <- copy(shp_states) %>%
+    select_by_ref(c("STUSPS", "geometry")) %>%
+    setnames("STUSPS", "stabb") %>%
+    .[stabb %notin% c("AK", "HI", "PR")]
   
-  dt_cbsa <- copy(dt_cbsa)
-  
-  required_cols <- c("GEOID", "GISJOIN", "year")
-  if (!all(required_cols %in% names(dt_cbsa))) {
-    stop("dt_cbsa is missing required columns: ",
-         paste(setdiff(required_cols, names(dt_cbsa)), collapse = ", "))
-  }
-  
-  name_var <- names(dt_cbsa)[grepl("NAME", names(dt_cbsa))][1]
-  
-  if (is.na(name_var)) {
-    stop("dt_cbsa is missing a column containing 'NAME'")
-  }
-  
-  dt_cbsa[, name_col := iconv(name_col, from = "LATIN1", to = "UTF-8"),
-          env = list(name_col = name_var)]
-  
-  cbsa_yr <- unique(dt_cbsa$year)
-  stopifnot(length(cbsa_yr) == 1)
-  
-  dt_st_regions_div <- fread(
-    census_regions_path,
+  dt_divisions <- fread(
+    file_path_census_regions_divisions,
     colClasses = "character"
   ) %>%
-    select_by_ref(c("stabb", "census_region", "census_division"))
+    select_by_ref(c("stabb", "census_division"))
   
-  dt_cw_cbsa_div_region <- dt_cbsa %>%
-    select_by_ref(c("GISJOIN", "GEOID", name_var)) %>%
-    .[, st_first := gsub(".*\\, ([A-Z]{2}).*$", "\\1", name_col),
-      env = list(name_col = name_var)] %>%
-    merge(dt_st_regions_div, by.x = "st_first", by.y = "stabb", all.x = TRUE) %>%
-    setnames(name_var, "cbsa_name") %>%
-    setcolorder(c("GISJOIN", "GEOID", "cbsa_name", "st_first", "census_region",
-                  "census_division")) %>%
-    setnames("GISJOIN", paste0("gjoin_cbsa_", cbsa_yr)) %>%
-    setnames("GEOID", paste0("geoid_cbsa_", cbsa_yr))
+  dt_out <- merge(shp_states, dt_divisions, by = "stabb", all.x = TRUE) %>%
+    st_as_sf() %>%
+    group_by(census_division) %>%
+    summarize(geometry = st_union(geometry)) %>%
+    ungroup() %>%
+    st_simplify(dTolerance = 1e03) %>% 
+    st_cast(to = "MULTIPOLYGON") %>%
+    st_transform(crs = 5070) %>%
+    as.data.table() %>%
+    .[!is.na(census_division)]
   
-  return(dt_cw_cbsa_div_region)
+  return(dt_out)
+}
+
+
+f_cw_to_census_divisions <- function(dt_shp, shp_census_divisions) {
+
+  box::use(
+    data.table[...], magrittr[`%>%`], CLmisc[select_by_ref],
+    sf[st_as_sf, st_join, st_transform]
+  )
+
+  stopifnot(
+    is.data.table(dt_shp),
+    c("GISJOIN", "GEOID") %chin% names(dt_shp),
+    is.data.table(shp_census_divisions)
+  )
+
+  dt_out <- st_join(
+    st_as_sf(dt_shp), 
+    st_as_sf(shp_census_divisions), 
+    join = st_intersects, largest = TRUE
+  ) %>%
+    as.data.table() %>%
+    select_by_ref(c("GISJOIN", "GEOID", "census_division")) %>%
+    setcolorder(c("GISJOIN", "GEOID", "census_division"))
+
+  return(dt_out)
+
 }

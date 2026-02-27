@@ -14,27 +14,27 @@ stage1_panel_time_periods <- tibble::tribble(
 )
 
 values_stage1_sc_datasets <- tibble::tribble(
-  ~name_suffix, ~dt_natl_hp_sym, ~geog_label, ~geog_yr,
+  ~name_suffix, ~dt_natl_hp_sym, ~geog_label, ~geog_yr, ~cluster_var, 
 
   # --- CBSA ---
-  "fmcc_cbsa", sym("fmcc_natl_hp"), "cbsa", 2023,
-  "fhfa_cbsa", sym("fhfa_natl_hp"), "cbsa", 2023,
-  "zillow_cbsa", sym("zillow_natl_hp"), "cbsa", 2023,
+  "fmcc_cbsa", sym("fmcc_natl_hp"), "cbsa", 2023, "GEOID", 
+  "fhfa_cbsa", sym("fhfa_annual_hp_natl"), "cbsa", 2023, "GEOID",
+  "zillow_cbsa", sym("zillow_natl_hp"), "cbsa", 2023, "GEOID",
 
   # --- County ---
-  "fhfa_cnty", sym("fhfa_natl_hp"), "cnty", 2020,
-  "zillow_cnty", sym("zillow_natl_hp"), "cnty", 2020,
+  "fhfa_cnty", sym("fhfa_annual_hp_natl"), "cnty", 2020, "cz20", 
+  "zillow_cnty", sym("zillow_natl_hp"), "cnty", 2020, "cz20",
 
   # --- Zip3 ---
-  "fhfa_zip3", sym("fhfa_natl_hp"), "zip3", 2020,
-  "fhfa_qtrly_zip3", sym("fhfa_hpi_qtr_natl"), "zip3", 2020,
+  "fhfa_zip3", sym("fhfa_annual_hp_natl"), "zip3", 2000, "cz20",
+  "fhfa_qtrly_zip3", sym("fhfa_hpi_qtr_natl"), "zip3", 2000, "cz20",
 
   # --- Zip5 ---
-  "fhfa_zip5", sym("fhfa_natl_hp"), "zip5", 2020,
-  "zillow_zip5", sym("zillow_natl_hp"), "zip5", 2020,
+  "fhfa_zip5", sym("fhfa_annual_hp_natl"), "zip5", 2020, "cz20",
+  "zillow_zip5", sym("zillow_natl_hp"), "zip5", 2020, "cz20",
 
   # --- Tract ---
-  "fhfa_trct", sym("fhfa_natl_hp"), "trct", 2020
+  "fhfa_trct", sym("fhfa_annual_hp_natl"), "trct", 2020, "cz20",
 ) %>%
   dplyr::mutate(
     dt_lu_ml_sym = syms(sprintf("lu_ml_panel_%s", name_suffix)),
@@ -83,12 +83,11 @@ stage1_sc_panel_targets <- list(
         start_idx         = as.Date(start_date), 
         end_idx           = as.Date(end_date),   
         hp_target_var     = "hp.target",         
-        geog_cluster_var  = "cz20",              
+        geog_cluster_var  = cluster_var, 
         ds_label          = ds_label,
         geog_label        = geog_label
       ),
       format = "rds"
     )
   )
-
 )

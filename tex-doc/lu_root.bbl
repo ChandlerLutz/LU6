@@ -1,0 +1,14 @@
+\begin{thebibliography}{1}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Lutz(2025)]{Lutz2025amenities}
+C.~Lutz.
+\newblock Natural amenity demand index construction using google places.
+\newblock \url{https://github.com/ChandlerLutz/gmaps-natural-amenities-2025},
+  2025.
+
+\end{thebibliography}

@@ -1,0 +1,89 @@
+\documentclass[12pt]{article}
+
+% Required packages
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{setspace}
+\usepackage{caption}
+
+\title{The Economic Value of Local Amenities Across Housing Market Cycles}
+\author{}
+\date{}
+
+\begin{document}
+\begin{spacing}{1.15}
+
+\maketitle
+
+\section{Overview and Empirical Strategy}
+This report outlines the economic relationship between local consumer amenities and housing market dynamics across six distinct macroeconomic cycles spanning four decades. To isolate this effect, we estimate a fixed-effects panel regression. The dependent variable is the year-over-year log change in local house prices ($\Delta \ln(HP_{i,t})$), which serves as a proxy for the percentage growth rate of house prices in a given city. 
+
+The primary independent variable of interest is a measure of local amenity demand derived from Google Maps. To facilitate economic interpretation, this variable is cross-sectionally standardized (mean zero, unit variance). We interact this amenity measure with categorical indicators for six distinct housing market cycles: the 1980s boom, the 1990s hangover, the pre-GFC boom (2000--2007), the housing crash (2008--2012), the recovery (2013--2019), and the pandemic era (2020s). By incorporating strict time fixed effects (at the monthly/quarterly index level), the model completely absorbs national macroeconomic trends such as federal interest rate changes or aggregate housing cycles. Consequently, the coefficients isolate the cross-sectional growth premium—comparing high-amenity cities to low-amenity cities within the exact same time period. Standard errors are clustered at the geographic (GEOID) level to account for serial correlation within local markets.
+
+\section{Regression Results}
+Table \ref{tab:results} presents the output of the estimation. All interaction terms are statistically significant, indicating robust variations in how local amenities are priced across different market environments.
+
+\begin{table}[htpb]
+\centering
+\caption{Effect of Amenity Demand on YoY House Price Growth by Cycle}
+\label{tab:results}
+\begin{tabular}{lc}
+\toprule
+\textbf{Variables} & \textbf{Dependent Variable: $\Delta \ln(HP_{i,t})$} \\
+\midrule
+Amenity Demand $\times$ Cycle (1980s)      & 0.0121$^{***}$ \\
+                                         & (0.0012) \\
+                                         & \\
+Amenity Demand $\times$ Cycle (1990s)      & -0.0018$^{**}$ \\
+                                         & (0.0006) \\
+                                         & \\
+Amenity Demand $\times$ Cycle (2000--2007) & 0.0051$^{***}$ \\
+                                         & (0.0010) \\
+                                         & \\
+Amenity Demand $\times$ Cycle (2008--2012) & -0.0100$^{***}$ \\
+                                         & (0.0022) \\
+                                         & \\
+Amenity Demand $\times$ Cycle (2013--2019) & 0.0048$^{***}$ \\
+                                         & (0.0011) \\
+                                         & \\
+Amenity Demand $\times$ Cycle (2020s)      & 0.0052$^{***}$ \\
+                                         & (0.0007) \\
+\midrule
+Time Fixed Effects & Yes \\
+Cluster Level      & GEOID \\
+\bottomrule
+\multicolumn{2}{l}{\footnotesize Standard errors in parentheses. $^{***} p<0.001, ^{**} p<0.01, ^* p<0.05$} \\
+\end{tabular}
+\end{table}
+
+\section{Economic Interpretation}
+Because the amenity variable is standardized, the estimated coefficients represent the marginal impact of a one-standard-deviation ($1\sigma$) increase in local amenity demand on the year-over-year house price growth rate.
+\begin{itemize}
+    \item \textbf{1980s:} A $1\sigma$ increase in amenity demand was associated with a massive 1.21 percentage point increase in relative YoY house price growth. 
+    \item \textbf{1990s:} The amenity premium inverted. A $1\sigma$ increase in amenity demand was associated with a 0.18 percentage point decline in relative YoY price growth.
+    \item \textbf{2000--2007:} High-amenity markets resumed their outperformance, experiencing an additional 0.51 percentage points of YoY price growth compared to lower-amenity peers.
+    \item \textbf{2008--2012:} During the Great Financial Crisis, the premium collapsed violently. A $1\sigma$ increase in amenity demand was associated with a 1.00 percentage point \textit{decline} in relative YoY price growth. 
+    \item \textbf{2013--2019:} The traditional premium returned at 0.48 percentage points.
+    \item \textbf{2020s:} The amenity premium expanded further during the remote work era, reaching 0.52 percentage points of excess YoY house price growth.
+\end{itemize}
+
+\section{Economic Narrative}
+These results reveal two distinct economic narratives regarding the valuation of local amenities in the housing market:
+
+\subsection{Amenities as a ``High Beta'' Market Characteristic}
+The estimates spanning from the 1980s to the 2010s demonstrate that amenity-rich cities operate as high-beta assets within the broader real estate market; they exhibit highly exaggerated cyclicality. When the national economy is expanding and credit is accessible (the 1980s, 2000--2007, and 2013--2019), consumers willingly pay a premium for lifestyle amenities, driving prices up significantly faster than the national average.
+
+Conversely, following periods of rapid expansion, these high-amenity markets face severe structural hangovers. The immense premium observed in the 1980s (+1.21 p.p.) was directly followed by a period of underperformance in the 1990s (-0.18 p.p.). This perfectly aligns with the foundational housing literature by Case and Shiller (2003), who noted that ``[d]uring the 1980s, spectacular home price booms in California and the Northeast \dots ultimately encountered a substantial drop in demand in the late 1980s and contributed significantly to severe regional recessions in the early 1990s.'' The negative coefficient in the 1990s is not an anomaly; it is the inevitable mean-reversion of the high-amenity, coastal markets that overheated during the 1980s exuberance. 
+
+This exact same boom-bust cyclicality repeated itself two decades later. The amenity premium expanded during the subprime boom of the 2000s (+0.51 p.p.), only to violently crash during the 2008--2012 contraction (-1.00 p.p.). As households face income shocks and credit constraints during recessions, lifestyle amenities transform into luxury goods that buyers are unable to finance, causing high-amenity markets to experience significantly sharper price corrections than their low-amenity counterparts.
+
+\subsection{The Remote Work Structural Shift (2020s)}
+Following the post-GFC recovery, the coefficient for the 2020s (+0.52 p.p.) highlights a renewed acceleration in the amenity premium. This suggests that the current era is characterized by a structural shift in consumer preferences. The widespread adoption of remote work severed the traditional spatial link between the workplace and the home. No longer tethered to specific employment hubs, white-collar workers aggressively re-optimized their residential choices based on lifestyle and consumption amenities. This exogenous shock to residential mobility transformed local amenities into a primary driver of national housing demand, solidifying a robust growth premium for amenity-rich regions in the post-pandemic landscape.
+
+\vspace{2em}
+\noindent\textbf{References}\\
+\noindent Case, K. E., \& Shiller, R. J. (2003). Is There a Bubble in the Housing Market? \textit{Brookings Papers on Economic Activity}, 2003(2), 299--362.
+
+\end{spacing}
+\end{document}

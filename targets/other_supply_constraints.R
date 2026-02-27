@@ -57,7 +57,7 @@ bsh_targets <- list(
 
   # --- Crosswalks (Tract 2020 & Zip 5 2020) ---
   tar_target(
-    dt_bsh_trct2020,
+    dt_bsh_trct_2020,
     f_crosswalk_baum_snow_han(
       dt_bsh = dt_bsh_gammas_raw,
       dt_cw = dt_cw_trct00_trct20,
@@ -75,64 +75,44 @@ bsh_targets <- list(
 
   # --- Aggregations (Metro, County, Zip3) ---
   
-  # Metros/CBSAs (Uses cbsa_shp_YYYY from targets/shp.R)
-  tar_target(
-    dt_bsh_cbsa_2009,
-    f_aggregate_baum_snow_han(
-      dt_bsh = dt_bsh_gammas_raw,
-      dt_shp = cbsa_shp_2009, 
-      dt_trct_hu = dt_trct_hu_2000,
-      sf_trct_shp = sf_trct_2000,
-      geog_level = "metro",
-      year = 2010
+  tar_map(
+    values = tibble::tibble(
+      year   = c(2009, 2010, 2015, 2020, 2023),
+      dt_shp = rlang::syms(c("cbsa_shp_2009", "cbsa_shp_2010", "cbsa_shp_2015",
+                             "cbsa_shp_2020", "cbsa_shp_2023"))
+    ),
+    names = "year",
+    tar_target(
+      dt_bsh_cbsa,
+      f_aggregate_baum_snow_han(
+        dt_bsh = dt_bsh_gammas_raw,
+        dt_shp = dt_shp,
+        dt_trct_hu = dt_trct_hu_2000,
+        sf_trct_shp = sf_trct_2000,
+        geog_level = "metro",
+        year = year
+      )
     )
-  ),
-  tar_target(
-    dt_bsh_cbsa_2010,
-    f_aggregate_baum_snow_han(
-      dt_bsh = dt_bsh_gammas_raw,
-      dt_shp = cbsa_shp_2010, 
-      dt_trct_hu = dt_trct_hu_2000,
-      sf_trct_shp = sf_trct_2000,
-      geog_level = "metro",
-      year = 2010
-    )
-  ),
-  tar_target(
-    dt_bsh_cbsa_2015,
-    f_aggregate_baum_snow_han(
-      dt_bsh = dt_bsh_gammas_raw,
-      dt_shp = cbsa_shp_2015, 
-      dt_trct_hu = dt_trct_hu_2000,
-      sf_trct_shp = sf_trct_2000,
-      geog_level = "metro",
-      year = 2015
-    )
-  ),
-  tar_target(
-    dt_bsh_cbsa_2023,
-    f_aggregate_baum_snow_han(
-      dt_bsh = dt_bsh_gammas_raw,
-      dt_shp = cbsa_shp_2023,
-      dt_trct_hu = dt_trct_hu_2000,
-      sf_trct_shp = sf_trct_2000,
-      geog_level = "metro",
-      year = 2023
-    )
-  ),
+  ), 
   
-  # County 2010 (Uses cnty_shp_2010 from targets/shp.R)
-  tar_target(
-    dt_bsh_county_2010,
-    f_aggregate_baum_snow_han(
-      dt_bsh = dt_bsh_gammas_raw,
-      dt_shp = cnty_shp_2010,
-      dt_trct_hu = dt_trct_hu_2000,
-      sf_trct_shp = sf_trct_2000,
-      geog_level = "cnty",
-      year = 2010
+  tar_map(
+    values = tibble::tibble(
+      year = c(2010, 2020, 2023),
+      dt_shp = rlang::syms(c("cnty_shp_2010", "cnty_shp_2020", "cnty_shp_2023"))
+    ),
+    names = "year",
+    tar_target(
+      dt_bsh_cnty,
+      f_aggregate_baum_snow_han(
+        dt_bsh = dt_bsh_gammas_raw,
+        dt_shp = dt_shp,
+        dt_trct_hu = dt_trct_hu_2000,
+        sf_trct_shp = sf_trct_2000,
+        geog_level = "cnty",
+        year = year
+      )
     )
-  ),
+  ), 
   
   # Zip3 2000
   tar_target(
@@ -159,7 +139,38 @@ saiz_cw_targets <- list(
     names = "year",
     tar_target(
       saiz_cbsa,
-      f_cw_saiz_to_cbsa(dt_saiz = msa_shp_1999, cbsa_shp = shp)
+      f_cw_saiz_to_cbsa(dt_saiz = saiz_data_msa_shp_1999, cbsa_shp = shp)
     )
+  ),
+
+  tar_map(
+    values = tibble::tibble(
+      year = c(2010, 2020, 2023),
+      shp = rlang::syms(paste0("cnty_shp_", c(2010, 2020, 2023)))
+    ),
+    names = "year",
+    tar_target(
+      saiz_cnty,
+      f_cw_saiz_to_county(dt_saiz = saiz_data_msa_shp_1999, dt_cnty_shp = shp,
+                          year = year)
+    )
+  ),
+
+  tar_target(
+    saiz_zip3_2000,
+    f_cw_saiz_to_zip3(dt_saiz = saiz_data_msa_shp_1999, dt_zip3_shp = shp_zip3_2000,
+                      year = 2000)
+  ),
+
+  tar_target(
+    saiz_zip5_2020,
+    f_cw_saiz_to_zip5(dt_saiz = saiz_data_msa_shp_1999, zip_shp = shp_zip5_2020,
+                      year = 2020)
+  ),
+
+  tar_target(
+    saiz_trct_2020,
+    f_cw_saiz_to_tract(dt_saiz = saiz_data_msa_shp_1999, tract_shp = shp_trct_2020,
+                       year = 2020)
   )
 )
