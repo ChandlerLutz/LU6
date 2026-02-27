@@ -45,6 +45,24 @@ f_extract_stable_features <- function(obj) {
     
     return(head(obj, 10))
     
+  } else if (inherits(obj, "ggplot")) {
+
+    orig_rows <- nrow(obj)
+    orig_cols <- ncol(obj)
+    
+    obj <- obj %>%
+      as.data.table() %>%
+      copy() %>%
+      .[, names(.SD) := NULL, .SDcols = is.list] %>%
+      .[, names(.SD) := lapply(.SD, \(x) round(x, 4)), .SDcols = is.numeric]
+    
+    setorder(obj)
+    
+    return(list(
+      dimensions = data.table(rows = orig_rows, columns = orig_cols),
+      top_10_rows = head(obj, 10)
+    ))
+    
   } else if (is.list(obj)) {
     return(lapply(obj, f_extract_stable_features))
   } else {
