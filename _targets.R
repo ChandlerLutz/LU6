@@ -2,6 +2,9 @@
 
 library(targets); library(tarchetypes)
 
+Sys.setenv(TESTTHAT_UPDATE_SNAPSHOTS = "")
+## Sys.setenv(TESTTHAT_UPDATE_SNAPSHOTS = "true")
+
 tar_option_set(
   format = "parquet"
 )

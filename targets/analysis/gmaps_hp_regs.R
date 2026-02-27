@@ -4,7 +4,7 @@ gmps_hp_regs_targets <- list(
   tarchetypes::tar_map(
     values = tibble::tibble(
       ds_name = c("fmcc_cbsa", "fhfa_cbsa", "zillow_cbsa"),
-      hp_ds = rlang::syms(c("fmcc_cbsa_hp", "fhfa_annual_hp_cbsa", "zillow_hp_cbsa")),
+      hp_ds = rlang::syms(c("fmcc_cbsa_hp", "fhfa_annual_hp_cbsa", "zillow_hp_cbsa"))
     ),
     names = ds_name,
     tar_target(
@@ -15,8 +15,15 @@ gmps_hp_regs_targets <- list(
         dt_hm_cycles = dt_housing_cycles_panel
       ),
       format = "rds"
+    ),
+
+    tar_target(
+      gmaps_hp_reg_models_tests,
+      f_run_snapshot_tests(gmaps_hp_reg_models, paste("gmaps_hp_reg_models", ds_name)),
+      format = "rds"
     )
-  ),
+  ), 
+    
 
   tar_target(
     gmaps_hp_reg_plot,
@@ -29,3 +36,4 @@ gmps_hp_regs_targets <- list(
     format = "file"
   )
 )
+
